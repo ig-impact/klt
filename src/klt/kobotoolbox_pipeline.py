@@ -3,7 +3,7 @@ from dlt.sources.rest_api import rest_api_resources
 from dlt.sources.rest_api.typing import ClientConfig, RESTAPIConfig
 from rich import print
 
-from .resources import res_asset, res_asset_content, res_project_view
+from .resources import res_asset, res_asset_content, res_project_view, res_submission
 
 
 def kobo_client(kobo_token: str, kobo_server: str) -> ClientConfig:
@@ -27,6 +27,7 @@ def kobo_source(kobo_token=dlt.secrets.value, kobo_server=dlt.secrets.value):
             res_project_view(),
             res_asset(earliest_modified_date="2025-10-01", parallelized=True),
             res_asset_content(parallelized=False),
+            res_submission(earliest_submission_date="2025-10-01", parallelized=True),
         ],
     }
     resources = rest_api_resources(config)
