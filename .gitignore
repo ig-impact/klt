@@ -15,3 +15,10 @@ wheels/
 dlt_pipelines 
 
 *.duckdb
+
+# Logging files
+*.log
+http_logs/
+
+# Dev folder
+dev/*
