@@ -22,12 +22,15 @@ def res_submission(
             },
             "data_selector": "results",
             "response_actions": [{"status_code": 400, "action": "ignore"}],
+            "paginator": {"type": "json_link", "next_url_path": "next"},
         },
         "include_from_parent": ["uid"],
         "primary_key": ["_uuid", "_id"],
         "parallelized": parallelized,
         "selected": selected,
-        "processing_steps": [{"map": transform_submission_data}],
+        "processing_steps": [
+            {"map": transform_submission_data},
+        ],
     }
     return resource
 
@@ -47,5 +50,8 @@ def transform_submission_data(data: dict):
             }
         )
     val = {key: data[key] for key in fields}
+    if "_attachments" in fields:
+        if len(data["_attachments"]) == 0:
+            val["_attachments"] = [{"uid": "INVALID"}]
     val["responses"] = eav
     return val

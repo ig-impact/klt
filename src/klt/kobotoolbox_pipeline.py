@@ -1,9 +1,9 @@
 import dlt
 from dlt.sources.rest_api import rest_api_resources
 from dlt.sources.rest_api.typing import ClientConfig, RESTAPIConfig
-from rich import print
 
-from .resources import res_asset, res_asset_content, res_project_view, res_submission
+from .logging import logger_dlt
+from .resources import res_asset, res_audit, res_project_view, res_submission
 
 
 def kobo_client(kobo_token: str, kobo_server: str) -> ClientConfig:
@@ -24,10 +24,13 @@ def kobo_source(kobo_token=dlt.secrets.value, kobo_server=dlt.secrets.value):
     config: RESTAPIConfig = {
         "client": kobo_client(kobo_token, kobo_server),
         "resources": [
-            res_project_view(),
-            res_asset(earliest_modified_date="2025-10-01", parallelized=True),
-            res_asset_content(parallelized=False),
+            res_project_view(selected=False),
+            res_asset(
+                earliest_modified_date="2025-10-01", parallelized=True, selected=False
+            ),
+            # res_asset_content(parallelized=False),
             res_submission(earliest_submission_date="2025-10-01", parallelized=True),
+            res_audit(),
         ],
     }
     resources = rest_api_resources(config)
@@ -43,9 +46,10 @@ def load_kobo():
         pipelines_dir="./dlt_pipelines",
     )
 
+    logger_dlt.info("KoboToolbox pipeline run started")
     load_info = pipeline.run(
         kobo_source(),
         write_disposition="replace",
     )
-    print(load_info)
+    logger_dlt.info(f"{load_info}")
     return pipeline
