@@ -11,3 +11,7 @@ wheels/
 
 # dlt
 .dlt/secrets.toml
+# dlt state
+dlt_pipelines 
+
+*.duckdb
