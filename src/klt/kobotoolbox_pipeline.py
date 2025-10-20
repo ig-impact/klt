@@ -3,7 +3,7 @@ from dlt.sources.rest_api import rest_api_resources
 from dlt.sources.rest_api.typing import ClientConfig, RESTAPIConfig
 from rich import print
 
-from .resources import res_project_view
+from .resources import res_asset, res_project_view
 
 
 def kobo_client(kobo_token: str, kobo_server: str) -> ClientConfig:
@@ -25,6 +25,7 @@ def kobo_source(kobo_token=dlt.secrets.value, kobo_server=dlt.secrets.value):
         "client": kobo_client(kobo_token, kobo_server),
         "resources": [
             res_project_view(),
+            res_asset(),
         ],
     }
     resources = rest_api_resources(config)
@@ -41,7 +42,7 @@ def load_kobo():
 
     load_info = pipeline.run(
         kobo_source(),
-        write_disposition="replace",
+        write_disposition="merge",
     )
     print(load_info)
     return pipeline
