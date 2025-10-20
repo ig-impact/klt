@@ -2,6 +2,11 @@ import json
 
 from dlt.sources.rest_api.typing import EndpointResource
 
+from .http_logger import create_http_logger
+
+# Create resource-specific logger
+log_submission_http = create_http_logger(resource_name="submission")
+
 
 def res_submission(
     earliest_submission_date: str = "2025-08-01",
@@ -21,7 +26,10 @@ def res_submission(
                 "format": "json",
             },
             "data_selector": "results",
-            "response_actions": [{"status_code": 400, "action": "ignore"}],
+            "response_actions": [
+                log_submission_http,
+                {"status_code": 400, "action": "ignore"},
+            ],
             "paginator": {"type": "json_link", "next_url_path": "next"},
         },
         "include_from_parent": ["uid"],

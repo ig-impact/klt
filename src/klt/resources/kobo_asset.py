@@ -1,5 +1,11 @@
 from dlt.sources.rest_api.typing import EndpointResource
 
+from .http_logger import create_http_logger
+
+# Create resource-specific loggers
+log_asset_http = create_http_logger(resource_name="asset")
+log_asset_content_http = create_http_logger(resource_name="asset_content")
+
 
 def res_asset(
     page_size: int = 5000,
@@ -20,6 +26,7 @@ def res_asset(
                 "cursor_path": "date_modified",
                 "initial_value": earliest_modified_date,
             },
+            "response_actions": [log_asset_http],
             "paginator": {"type": "json_link", "next_url_path": "next"},
         },
         "selected": selected,
@@ -38,7 +45,10 @@ def res_asset_content(
         "name": "asset_content",
         "endpoint": {
             "path": "/api/v2/assets/{resources.asset.uid}/content/",
-            "response_actions": [{"status_code": 400, "action": "ignore"}],
+            "response_actions": [
+                log_asset_content_http,
+                {"status_code": 400, "action": "ignore"},
+            ],
             "paginator": {"type": "json_link", "next_url_path": "next"},
             "data_selector": "data",
         },

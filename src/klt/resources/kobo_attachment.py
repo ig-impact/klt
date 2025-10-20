@@ -4,6 +4,11 @@ from io import BytesIO
 import pandas as pd
 from dlt.sources.rest_api.typing import EndpointResource
 
+from .http_logger import create_http_logger
+
+# Create resource-specific logger
+log_audit_http = create_http_logger(resource_name="audit")
+
 
 def res_audit(
     selected: bool = True,
@@ -16,6 +21,7 @@ def res_audit(
             "data_selector": None,
             "paginator": "single_page",
             "response_actions": [
+                log_audit_http,
                 prepare_csv,
                 {"status_code": 404, "action": "ignore"},
             ],
