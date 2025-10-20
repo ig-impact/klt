@@ -1,7 +1,12 @@
-# put your configuration values here
-
 [runtime]
-log_level="WARNING"  # the system log level of dlt
-# use the dlthub_telemetry setting to enable/disable anonymous usage data reporting, see https://dlthub.com/docs/reference/telemetry
-dlthub_telemetry = true
+log_level="DEBUG"  # the system log level of dlt
+dlthub_telemetry = false
+http_show_error_body = true
+http_max_error_body_length = 8192  # Maximum characters (default: 8192)
 
+[normalize]
+workers=8
+
+[load]
+workers=50
+truncate_staging_dataset=true
