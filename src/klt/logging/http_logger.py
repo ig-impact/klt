@@ -1,4 +1,5 @@
-"""HTTP response logger for Kobo API calls."""
+"""HTTP response logger for API calls."""
+
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -33,7 +34,7 @@ def create_http_logger(
     Examples:
         ```python
         # Shared logging (all resources in same file)
-        from .http_logger import create_http_logger
+        from klt.logging import create_http_logger
         log_http = create_http_logger()
         
         # Resource-specific logging
@@ -70,7 +71,7 @@ def create_http_logger(
     
     def log_http_response(response: Response, *args, **kwargs) -> Response:
         """
-        Log HTTP response details from Kobo API.
+        Log HTTP response details from API.
         
         Args:
             response: The Response object from requests library
@@ -86,7 +87,7 @@ def create_http_logger(
         reason = response.reason
         
         # Build log message
-        prefix = f"{resource_name.upper()} | " if resource_name else "Kobo API | "
+        prefix = f"{resource_name.upper()} | " if resource_name else "API | "
         message = f"{prefix}{method} {url} → {status_code} {reason}"
         
         # Determine log level and suffix based on status code
@@ -121,4 +122,3 @@ def create_http_logger(
 
 # Default shared logger (backward compatibility)
 log_http_response = create_http_logger()
-

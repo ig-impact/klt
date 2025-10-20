@@ -2,7 +2,7 @@ import json
 
 from dlt.sources.rest_api.typing import EndpointResource
 
-from .http_logger import create_http_logger
+from ..logging import create_http_logger
 
 # Create resource-specific logger
 log_submission_http = create_http_logger(resource_name="submission")
