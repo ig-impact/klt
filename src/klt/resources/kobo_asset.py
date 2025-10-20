@@ -20,10 +20,31 @@ def res_asset(
                 "cursor_path": "date_modified",
                 "initial_value": earliest_modified_date,
             },
+            "paginator": {"type": "json_link", "next_url_path": "next"},
         },
         "selected": selected,
         "parallelized": parallelized,
         "primary_key": "uid",
         "processing_steps": [{"filter": lambda r: r.get("has_deployment") is True}],
+    }
+    return resource
+
+
+def res_asset_content(
+    selected: bool = True,
+    parallelized: bool = True,
+) -> EndpointResource:
+    resource: EndpointResource = {
+        "name": "asset_content",
+        "endpoint": {
+            "path": "/api/v2/assets/{resources.asset.uid}/content/",
+            "response_actions": [{"status_code": 400, "action": "ignore"}],
+            "paginator": {"type": "json_link", "next_url_path": "next"},
+            "data_selector": "data",
+        },
+        "include_from_parent": ["uid"],
+        "parallelized": parallelized,
+        "selected": selected,
+        "primary_key": "_asset_uid",
     }
     return resource
