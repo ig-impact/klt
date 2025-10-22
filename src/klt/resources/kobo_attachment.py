@@ -4,6 +4,8 @@ from io import BytesIO
 import pandas as pd
 from dlt.sources.rest_api.typing import EndpointResource
 
+from ..logging import logger_dlt
+
 
 def res_audit(
     selected: bool = True,
@@ -28,14 +30,12 @@ def res_audit(
 
 
 def prepare_csv(response, *args, **kwargs):
-    if response.headers.get("Content-Type") == "text/csv":
-        try:
-            csv = pd.read_csv(BytesIO(response.content))
-            content = csv.to_json(orient="records")
-            response._content = content.encode("utf-8")
-        except Exception as e:
-            e
-            __import__("ipdb").set_trace()
-    else:
+    try:
+        csv = pd.read_csv(BytesIO(response.content))
+        content = csv.to_json(orient="records")
+        response._content = content.encode("utf-8")
+        logger_dlt.success(f"Processed audit CSV at {response.url}")
+    except Exception as e:
         response._content = json.dumps([]).encode("utf-8")
+        logger_dlt.error(f"Failed to process audit CSV: {e} at {response.url}")
     return response
