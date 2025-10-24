@@ -1,5 +1,7 @@
 from dlt.sources.rest_api.typing import EndpointResource
 
+from ..logging import http_log
+
 
 def res_asset(
     page_size: int = 5000,
@@ -10,7 +12,7 @@ def res_asset(
     resource: EndpointResource = {
         "name": "asset",
         "endpoint": {
-            "path": "/api/v2/project-views/{resources.project_view.uid}/assets",
+            "path": "/api/v2/project-views/{resources.project_view.uid}/assets/",
             "data_selector": "results",
             "params": {
                 "q": "date_modified__gte:{incremental.start_value}",
@@ -21,6 +23,7 @@ def res_asset(
                 "initial_value": earliest_modified_date,
             },
             "paginator": {"type": "json_link", "next_url_path": "next"},
+            "response_actions": [http_log],
         },
         "selected": selected,
         "parallelized": parallelized,

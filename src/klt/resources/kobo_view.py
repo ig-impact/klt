@@ -7,7 +7,7 @@ def res_project_view(
     resource: EndpointResource = {
         "name": "project_view",
         "endpoint": {
-            "path": "/api/v2/project-views",
+            "path": "/api/v2/project-views/",
             "data_selector": "results",
             "params": {
                 "limit": page_size,
