@@ -2,7 +2,7 @@ import json
 
 from dlt.sources.rest_api.typing import EndpointResource
 
-from ..logging import http_logger
+from ..logging import http_log
 
 
 def res_submission(
@@ -23,7 +23,7 @@ def res_submission(
                 "format": "json",
             },
             "data_selector": "results",
-            "response_actions": [http_logger, {"status_code": 400, "action": "ignore"}],
+            "response_actions": [http_log, {"status_code": 400, "action": "ignore"}],
             "paginator": {"type": "json_link", "next_url_path": "next"},
         },
         "include_from_parent": ["uid"],
