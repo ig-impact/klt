@@ -1,7 +1,10 @@
 import logging
 import sys
 
+import requests
 from loguru import logger
+
+logger.remove()
 
 
 class InterceptHandler(logging.Handler):
@@ -24,7 +27,17 @@ class InterceptHandler(logging.Handler):
         )
 
 
+logger_http = logger.bind(scope="http")
 logger_dlt = logging.getLogger("dlt")
 logger_dlt.addHandler(InterceptHandler())
 
-logger.add("dlt_loguru.log")
+
+def http_log(response: requests.Response, *args, **kwargs):
+    logger_http.debug(
+        f"{response.request.method} on {response.url} with status code {response.status_code}"
+    )
+    return response
+
+
+logger.add("dlt.log", filter=lambda record: record["extra"].get("scope") != "http")
+logger.add("dlt_http.log", filter=lambda record: record["extra"].get("scope") == "http")
