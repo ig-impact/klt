@@ -1,33 +1,35 @@
 import json
 
 import dlt
-from dlt.sources.helpers.rest_client import RESTClient
+from dlt.sources.helpers.rest_client.client import RESTClient
 
 
 def make_resource_kobo_submission(
-    kobo_client: RESTClient, kobo_asset, earliest_submission_date: str = "2025-10-23"
+    kobo_client: RESTClient,
+    kobo_asset,
+    earliest_submission_date: str = "2025-01-01T00:00:00Z",
 ):
-    @dlt.resource(data_from=kobo_asset)
+    @dlt.resource(
+        data_from=kobo_asset,
+        parallelized=True,
+        name="kobo_submission",
+        primary_key=["_id", "_uuid"],
+    )
     def kobo_submission(
-        assets,
+        asset,
         submission_time=dlt.sources.incremental(
             cursor_path="_submission_time", initial_value=earliest_submission_date
         ),
     ):
-        for asset in assets:
-            if not asset.get("has_deployment"):
-                continue
-            asset_uid = asset["uid"]
-            path = f"/api/v2/assets/{asset_uid}/data/"
-            params = {
-                "query": json.dumps(
-                    {"_submission_time": {"$gte": submission_time.last_value}}
-                ),
-                "format": "json",
-            }
-            yield kobo_client.paginate(
-                path=path, params=params, data_selector="results"
-            )
+        asset_uid = asset["uid"]
+        path = f"/api/v2/assets/{asset_uid}/data/"
+        params = {
+            "query": json.dumps(
+                {"_submission_time": {"$gte": submission_time.start_value}}
+            ),
+            "format": "json",
+        }
+        yield kobo_client.paginate(path=path, params=params, data_selector="results")
 
     kobo_submission.add_map(transform_submission_data)
     return kobo_submission

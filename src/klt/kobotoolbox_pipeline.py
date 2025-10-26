@@ -1,11 +1,7 @@
 import dlt
 from dlt.sources.helpers.rest_client.client import RESTClient
 
-from klt.resources import (
-    make_resource_kobo_asset,
-    make_resource_kobo_audit_file,
-    make_resource_kobo_submission,
-)
+from klt.resources import make_resource_kobo_asset, make_resource_kobo_submission
 from klt.rest_client import make_rest_client
 
 
@@ -22,12 +18,8 @@ def kobo_source(
     )
 
     kobo_submission = make_resource_kobo_submission(kobo_client, kobo_asset)
-    kobo_audit = make_resource_kobo_audit_file(
-        kobo_client, kobo_submission=kobo_submission
-    )
 
-    # return [kobo_asset, kobo_submission, kobo_audit]
-    return [kobo_asset]
+    return [kobo_asset, kobo_submission]
 
 
 def load_kobo():

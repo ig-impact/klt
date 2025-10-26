@@ -11,7 +11,7 @@ def make_resource_kobo_asset(
     def kobo_asset(
         latest_submission_time_cursor=dlt.sources.incremental(
             cursor_path="deployment__last_submission_time",
-            initial_value="2000-01-01T00:00:00Z",
+            initial_value="2025-10-20T00:00:00Z",
             on_cursor_value_missing="include",
         ),
     ):
