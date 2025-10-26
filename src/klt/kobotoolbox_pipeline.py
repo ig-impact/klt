@@ -18,7 +18,7 @@ def kobo_source(
     kobo_client: RESTClient = make_rest_client(kobo_token, kobo_server)
 
     kobo_asset = make_resource_kobo_asset(
-        kobo_client, kobo_project_view=kobo_project_view
+        kobo_client, kobo_project_view_uid=kobo_project_view
     )
 
     kobo_submission = make_resource_kobo_submission(kobo_client, kobo_asset)
@@ -26,7 +26,8 @@ def kobo_source(
         kobo_client, kobo_submission=kobo_submission
     )
 
-    return [kobo_asset, kobo_submission, kobo_audit]
+    # return [kobo_asset, kobo_submission, kobo_audit]
+    return [kobo_asset]
 
 
 def load_kobo():
@@ -39,5 +40,5 @@ def load_kobo():
     )
     pipeline.run(
         kobo_source(),
-        write_disposition="replace",
+        write_disposition="merge",
     )

@@ -1,50 +1,40 @@
 import dlt
-from dlt.sources.helpers.rest_client import RESTClient
-from dlt.sources.rest_api.typing import EndpointResource
+from dlt.sources.helpers.rest_client.client import RESTClient
 
 
 def make_resource_kobo_asset(
     kobo_client: RESTClient,
-    kobo_project_view: str,
-    earliest_modification_date: str = "2025-10-23",
-    page_size: int = 5000,
+    kobo_project_view_uid: str,
+    page_size: int = 1000,
 ):
-    @dlt.resource()
+    @dlt.resource(name="kobo_asset", primary_key=["uid"], parallelized=True)
     def kobo_asset(
-        date_modified=dlt.sources.incremental(
-            "date_modified", initial_value=earliest_modification_date
+        latest_submission_time_cursor=dlt.sources.incremental(
+            cursor_path="deployment__last_submission_time",
+            initial_value="2000-01-01T00:00:00Z",
+            on_cursor_value_missing="include",
         ),
     ):
-        path = f"/api/v2/project-views/{kobo_project_view}/assets/"
+        path = f"/api/v2/project-views/{kobo_project_view_uid}/assets/"
         params = {
             "format": "json",
-            "q": f"date_modified__gte:{date_modified.last_value}",
             "limit": page_size,
         }
-        yield kobo_client.paginate(
+        for page in kobo_client.paginate(
             path=path,
             params=params,
-        )
+            data_selector="results",
+            allow_redirects=False,
+        ):
+            for asset in page:
+                if asset.get("deployment__submission_count", 0) == 0:
+                    continue
+                last_submission_time = (
+                    asset.get("deployment__last_submission_time")
+                    or latest_submission_time_cursor.start_value
+                )
+                if last_submission_time >= latest_submission_time_cursor.start_value:
+                    yield asset
+                yield asset
 
-    kobo_asset.add_filter(lambda r: r.get("has_deployment") is True)
     return kobo_asset
-
-
-def res_asset_content(
-    selected: bool = True,
-    parallelized: bool = True,
-) -> EndpointResource:
-    resource: EndpointResource = {
-        "name": "asset_content",
-        "endpoint": {
-            "path": "/api/v2/assets/{resources.asset.uid}/content/",
-            "response_actions": [{"status_code": 400, "action": "ignore"}],
-            "paginator": {"type": "json_link", "next_url_path": "next"},
-            "data_selector": "data",
-        },
-        "include_from_parent": ["uid"],
-        "parallelized": parallelized,
-        "selected": selected,
-        "primary_key": "_asset_uid",
-    }
-    return resource
