@@ -1,36 +1,33 @@
+import dlt
+from dlt.sources.helpers.rest_client import RESTClient
 from dlt.sources.rest_api.typing import EndpointResource
 
-from ..logging import http_log
 
-
-def res_asset(
+def make_resource_kobo_asset(
+    kobo_client: RESTClient,
+    kobo_project_view: str,
+    earliest_modification_date: str = "2025-10-23",
     page_size: int = 5000,
-    earliest_modified_date: str = "2025-08-01",
-    selected: bool = True,
-    parallelized: bool = True,
-) -> EndpointResource:
-    resource: EndpointResource = {
-        "name": "asset",
-        "endpoint": {
-            "path": "/api/v2/project-views/{resources.project_view.uid}/assets/",
-            "data_selector": "results",
-            "params": {
-                "q": "date_modified__gte:{incremental.start_value}",
-                "limit": page_size,
-            },
-            "incremental": {
-                "cursor_path": "date_modified",
-                "initial_value": earliest_modified_date,
-            },
-            "paginator": {"type": "json_link", "next_url_path": "next"},
-            "response_actions": [http_log],
-        },
-        "selected": selected,
-        "parallelized": parallelized,
-        "primary_key": "uid",
-        "processing_steps": [{"filter": lambda r: r.get("has_deployment") is True}],
-    }
-    return resource
+):
+    @dlt.resource()
+    def kobo_asset(
+        date_modified=dlt.sources.incremental(
+            "date_modified", initial_value=earliest_modification_date
+        ),
+    ):
+        path = f"/api/v2/project-views/{kobo_project_view}/assets/"
+        params = {
+            "format": "json",
+            "q": f"date_modified__gte:{date_modified.last_value}",
+            "limit": page_size,
+        }
+        yield kobo_client.paginate(
+            path=path,
+            params=params,
+        )
+
+    kobo_asset.add_filter(lambda r: r.get("has_deployment") is True)
+    return kobo_asset
 
 
 def res_asset_content(

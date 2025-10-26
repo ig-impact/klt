@@ -1,12 +1,9 @@
-from .kobo_asset import res_asset, res_asset_content
-from .kobo_attachment import res_audit
-from .kobo_submission import res_submission
-from .kobo_view import res_project_view
+from .kobo_asset import make_resource_kobo_asset
+from .kobo_attachment import make_resource_kobo_audit_file
+from .kobo_submission import make_resource_kobo_submission
 
 __all__ = [
-    "res_project_view",
-    "res_asset",
-    "res_asset_content",
-    "res_submission",
-    "res_audit",
+    "make_resource_kobo_asset",
+    "make_resource_kobo_submission",
+    "make_resource_kobo_audit_file",
 ]

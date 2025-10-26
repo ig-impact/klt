@@ -1,32 +1,37 @@
 import json
 from io import BytesIO
 
+import dlt
 import pandas as pd
-from dlt.sources.rest_api.typing import EndpointResource
+from dlt.sources.helpers.rest_client.client import RESTClient
 
 from ..logging import logger_dlt
 
 
-def res_audit(
-    selected: bool = True,
-    parallelized: bool = True,
-) -> EndpointResource:
-    resource: EndpointResource = {
-        "name": "audit",
-        "endpoint": {
-            "path": "/api/v2/assets/{resources.submission._asset_uid}/data/{resources.submission._id}/attachments/{resources.submission._attachments[*].uid}",
-            "data_selector": None,
-            "paginator": "single_page",
-            "response_actions": [
-                prepare_csv,
-                {"status_code": 404, "action": "ignore"},
-            ],
-        },
-        "selected": selected,
-        "parallelized": parallelized,
-        "include_from_parent": ["_asset_uid", "_id", "_uuid"],
-    }
-    return resource
+def make_resource_kobo_audit_file(
+    kobo_client: RESTClient,
+    kobo_submission,
+):
+    @dlt.transformer(name="audit", data_from=kobo_submission)
+    def kobo_audit(submissions):
+        for submission in submissions:
+            audit_file = next(
+                filter(
+                    lambda s: s.get("media_file_basename") == "audit.csv",
+                    submission.get("_attachments", []),
+                ),
+                None,
+            )
+            if audit_file:
+                path = audit_file["download_url"]
+                path = path.replace("?format=json", "")
+                response = kobo_client.get(path)
+                response.raise_for_status()
+                csv_content = pd.read_csv(BytesIO(response.content))
+                if not csv_content.empty:
+                    yield csv_content.to_dict(orient="records")
+
+    return kobo_audit
 
 
 def prepare_csv(response, *args, **kwargs):

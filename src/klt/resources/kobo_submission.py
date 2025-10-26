@@ -1,40 +1,36 @@
 import json
 
-from dlt.sources.rest_api.typing import EndpointResource
+import dlt
+from dlt.sources.helpers.rest_client import RESTClient
 
-from ..logging import http_log
 
-
-def res_submission(
-    earliest_submission_date: str = "2025-08-01",
-    selected: bool = True,
-    parallelized: bool = True,
-) -> EndpointResource:
-    resource: EndpointResource = {
-        "name": "submission",
-        "endpoint": {
-            "path": "/api/v2/assets/{resources.asset.uid}/data/",
-            "incremental": {
-                "cursor_path": "_submission_time",
-                "initial_value": earliest_submission_date,
-            },
-            "params": {
-                "query": '{{"_submission_time": {{"$gte": "{incremental.start_value}"}}}}',
+def make_resource_kobo_submission(
+    kobo_client: RESTClient, kobo_asset, earliest_submission_date: str = "2025-10-23"
+):
+    @dlt.resource(data_from=kobo_asset)
+    def kobo_submission(
+        assets,
+        submission_time=dlt.sources.incremental(
+            cursor_path="_submission_time", initial_value=earliest_submission_date
+        ),
+    ):
+        for asset in assets:
+            if not asset.get("has_deployment"):
+                continue
+            asset_uid = asset["uid"]
+            path = f"/api/v2/assets/{asset_uid}/data/"
+            params = {
+                "query": json.dumps(
+                    {"_submission_time": {"$gte": submission_time.last_value}}
+                ),
                 "format": "json",
-            },
-            "data_selector": "results",
-            "response_actions": [http_log, {"status_code": 400, "action": "ignore"}],
-            "paginator": {"type": "json_link", "next_url_path": "next"},
-        },
-        "include_from_parent": ["uid"],
-        "primary_key": ["_uuid", "_id"],
-        "parallelized": parallelized,
-        "selected": selected,
-        "processing_steps": [
-            {"map": transform_submission_data},
-        ],
-    }
-    return resource
+            }
+            yield kobo_client.paginate(
+                path=path, params=params, data_selector="results"
+            )
+
+    kobo_submission.add_map(transform_submission_data)
+    return kobo_submission
 
 
 def transform_submission_data(data: dict):
@@ -52,8 +48,5 @@ def transform_submission_data(data: dict):
             }
         )
     val = {key: data[key] for key in fields}
-    if "_attachments" in fields:
-        if len(data["_attachments"]) == 0:
-            val["_attachments"] = [{"uid": "INVALID"}]
     val["responses"] = eav
     return val

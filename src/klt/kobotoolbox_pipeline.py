@@ -1,54 +1,43 @@
 import dlt
-from dlt.sources.rest_api import rest_api_resources
-from dlt.sources.rest_api.typing import ClientConfig, RESTAPIConfig
-from rich import print
+from dlt.sources.helpers.rest_client.client import RESTClient
 
-from .logging import logger
-from .resources import res_asset, res_project_view, res_submission
-
-
-def kobo_client(kobo_token: str, kobo_server: str) -> ClientConfig:
-    client_config: ClientConfig = {
-        "base_url": kobo_server,
-        "auth": {
-            "type": "api_key",
-            "name": "Authorization",
-            "api_key": f"Token {kobo_token}",
-            "location": "header",
-        },
-    }
-    return client_config
+from klt.resources import (
+    make_resource_kobo_asset,
+    make_resource_kobo_audit_file,
+    make_resource_kobo_submission,
+)
+from klt.rest_client import make_rest_client
 
 
 @dlt.source
-def kobo_source(kobo_token=dlt.secrets.value, kobo_server=dlt.secrets.value):
-    date = "2025-10-21"
-    config: RESTAPIConfig = {
-        "client": kobo_client(kobo_token, kobo_server),
-        "resources": [
-            res_project_view(selected=False),
-            res_asset(earliest_modified_date=date, parallelized=True, selected=True),
-            res_submission(earliest_submission_date=date, parallelized=True),
-        ],
-    }
-    resources = rest_api_resources(config)
-    yield from resources
+def kobo_source(
+    kobo_token: str = dlt.secrets.value,
+    kobo_server: str = dlt.secrets.value,
+    kobo_project_view: str = dlt.secrets.value,
+):
+    kobo_client: RESTClient = make_rest_client(kobo_token, kobo_server)
+
+    kobo_asset = make_resource_kobo_asset(
+        kobo_client, kobo_project_view=kobo_project_view
+    )
+
+    kobo_submission = make_resource_kobo_submission(kobo_client, kobo_asset)
+    kobo_audit = make_resource_kobo_audit_file(
+        kobo_client, kobo_submission=kobo_submission
+    )
+
+    return [kobo_asset, kobo_submission, kobo_audit]
 
 
 def load_kobo():
     pipeline = dlt.pipeline(
-        pipeline_name="kobotoolbox_pipeline",
+        pipeline_name="klt",
         destination="duckdb",
-        dataset_name="kobo",
+        dataset_name="klt_dataset",
         pipelines_dir="./dlt_pipelines",
         progress="log",
     )
-
-    logger.info("KoboToolbox pipeline run started")
-    load_info = pipeline.run(
+    pipeline.run(
         kobo_source(),
         write_disposition="replace",
     )
-    logger.info(f"{load_info}")
-    print(load_info)
-    return pipeline
