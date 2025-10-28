@@ -32,11 +32,11 @@ def kobo_source(kobo_token=dlt.secrets.value, kobo_server=dlt.secrets.value):
         "resources": [
             res_project_view(selected=False),
             res_asset(
-                earliest_modified_date="2025-10-01", parallelized=True, selected=False
+                earliest_modified_date="2025-10-20", parallelized=True, selected=False
             ),
             res_asset_content(parallelized=False),  # Maintenant actif pour le logging
-            res_submission(earliest_submission_date="2025-10-01", parallelized=True),
-            res_audit(),
+            res_submission(earliest_submission_date="2025-10-20", parallelized=True),
+            # res_audit(),
         ],
     }
     resources = rest_api_resources(config)
@@ -44,15 +44,22 @@ def kobo_source(kobo_token=dlt.secrets.value, kobo_server=dlt.secrets.value):
     yield from resources
 
 
-def load_kobo():
+def load_kobo(destination: str = "duckdb", dataset_name: str = "kobo"):
+    """
+    Load Kobo data to specified destination.
+    
+    Args:
+        destination: Destination type ("duckdb" for local, "postgres" for Azure)
+        dataset_name: Dataset/schema name in the destination
+    """
     pipeline = dlt.pipeline(
         pipeline_name="kobotoolbox_pipeline",
-        destination="duckdb",
-        dataset_name="kobo",
+        destination=destination,
+        dataset_name=dataset_name,
         pipelines_dir="./dlt_pipelines",
     )
 
-    logger_dlt.info("KoboToolbox pipeline run started")
+    logger_dlt.info(f"KoboToolbox pipeline run started - Destination: {destination}, Dataset: {dataset_name}")
     load_info = pipeline.run(
         kobo_source(),
         write_disposition="replace",

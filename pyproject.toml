@@ -8,7 +8,7 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "dlt[duckdb,workspace]>=1.17.1",
+    "dlt[duckdb,postgres,workspace]>=1.17.1",
     "loguru>=0.7.3",
     "pandas>=2.3.3",
     "pendulum>=3.1.0",
@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.scripts]
-klt = "klt:cli.app"
+klt = "klt.cli:app"
 
 [build-system]
 requires = ["hatchling"]
