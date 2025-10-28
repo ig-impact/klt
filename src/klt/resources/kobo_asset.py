@@ -1,5 +1,6 @@
 import dlt
 from dlt.sources.helpers.rest_client.client import RESTClient
+from ..models import ProjectViewAssetResponseWithNesting
 
 
 def make_resource_kobo_asset(
@@ -7,11 +8,16 @@ def make_resource_kobo_asset(
     kobo_project_view_uid: str,
     page_size: int = 1000,
 ):
-    @dlt.resource(name="kobo_asset", primary_key=["uid"], parallelized=True)
+    @dlt.resource(
+        name="kobo_asset",
+        primary_key=["uid"],
+        parallelized=True,
+        columns=ProjectViewAssetResponseWithNesting,
+    )
     def kobo_asset(
         latest_submission_time_cursor=dlt.sources.incremental(
             cursor_path="deployment__last_submission_time",
-            initial_value="2025-10-20T00:00:00Z",
+            initial_value="2025-01-01T00:00:00Z",
             on_cursor_value_missing="include",
         ),
     ):
@@ -27,14 +33,16 @@ def make_resource_kobo_asset(
             allow_redirects=False,
         ):
             for asset in page:
-                if asset.get("deployment__submission_count", 0) == 0:
+                submission_count: int = asset.get("deployment__submission_count") or 0
+                if submission_count == 0:
                     continue
-                last_submission_time = (
-                    asset.get("deployment__last_submission_time")
-                    or latest_submission_time_cursor.start_value
-                )
-                if last_submission_time >= latest_submission_time_cursor.start_value:
-                    yield asset
                 yield asset
 
+    # kobo_asset.add_map(debug_asset)
     return kobo_asset
+
+
+def debug_asset(asset):
+    import ipdb
+
+    ipdb.set_trace()
