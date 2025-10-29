@@ -1,17 +1,13 @@
 from __future__ import annotations
-from typing import ClassVar
-from dlt.common.libs.pydantic import DltConfig
 
-from pydantic import (
-    AwareDatetime,
-    BaseModel,
-    ConfigDict,
-    EmailStr,
-    Field,
-)
+from typing import ClassVar
+
+from dlt.common.libs.pydantic import DltConfig
+from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field
 
 
 class Sector(BaseModel):
+    dlt_config: ClassVar[DltConfig] = {"skip_nested_types": True}
     model_config = ConfigDict(
         extra="allow",
     )
@@ -20,6 +16,7 @@ class Sector(BaseModel):
 
 
 class PiiCollection(BaseModel):
+    dlt_config: ClassVar[DltConfig] = {"skip_nested_types": True}
     model_config = ConfigDict(
         extra="allow",
     )
@@ -28,6 +25,7 @@ class PiiCollection(BaseModel):
 
 
 class CountryItem(BaseModel):
+    dlt_config: ClassVar[DltConfig] = {"skip_nested_types": True}
     model_config = ConfigDict(
         extra="allow",
     )
@@ -36,6 +34,7 @@ class CountryItem(BaseModel):
 
 
 class Download(BaseModel):
+    dlt_config: ClassVar[DltConfig] = {"skip_nested_types": True}
     model_config = ConfigDict(
         extra="allow",
     )
@@ -47,6 +46,7 @@ class Download(BaseModel):
 
 
 class Settings(BaseModel):
+    dlt_config: ClassVar[DltConfig] = {"skip_nested_types": True}
     model_config = ConfigDict(
         extra="allow",
     )
@@ -60,6 +60,7 @@ class Settings(BaseModel):
 
 
 class ProjectViewAssetResponse(BaseModel):
+    dlt_config: ClassVar[DltConfig] = {"skip_nested_types": True}
     model_config = ConfigDict(
         extra="allow",
     )
@@ -93,21 +94,3 @@ class ProjectViewAssetResponse(BaseModel):
     asset_type: str
     downloads: list[Download]
     owner_label: str
-
-
-class PaginatedProjectViewAssetResponseList(BaseModel):
-    model_config = ConfigDict(
-        extra="allow",
-    )
-    count: int = Field(..., examples=[123])
-    next: str | None = Field(
-        None, examples=["http://api.example.org/accounts/?offset=400&limit=100"]
-    )
-    previous: str | None = Field(
-        None, examples=["http://api.example.org/accounts/?offset=200&limit=100"]
-    )
-    results: list[ProjectViewAssetResponse]
-
-
-class ProjectViewAssetResponseWithNesting(ProjectViewAssetResponse):
-    dlt_config: ClassVar[DltConfig] = {"skip_nested_types": True}

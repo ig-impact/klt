@@ -1,3 +1,3 @@
-from .project_view_assets import ProjectViewAssetResponseWithNesting
+from .project_view_assets import ProjectViewAssetResponse
 
-__all__ = ["ProjectViewAssetResponseWithNesting"]
+__all__ = ["ProjectViewAssetResponse"]
