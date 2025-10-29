@@ -1,6 +1,7 @@
 import dlt
 from dlt.sources.helpers.rest_client.client import RESTClient
-from ..models import ProjectViewAssetResponseWithNesting
+
+from ..models import ProjectViewAssetResponse
 
 
 def make_resource_kobo_asset(
@@ -12,7 +13,7 @@ def make_resource_kobo_asset(
         name="kobo_asset",
         primary_key=["uid"],
         parallelized=True,
-        columns=ProjectViewAssetResponseWithNesting,
+        columns=ProjectViewAssetResponse,
     )
     def kobo_asset(
         latest_submission_time_cursor=dlt.sources.incremental(
