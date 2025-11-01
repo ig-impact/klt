@@ -1,0 +1,79 @@
+name: Run KLT Pipeline
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Every day at 2 AM UTC
+  workflow_dispatch:  # Allow manual execution
+    inputs:
+      earliest_modified_date:
+        description: 'Start date for modified_date filter (YYYY-MM-DD)'
+        required: true
+      earliest_submission_date:
+        description: 'Start date for submission_date filter (YYYY-MM-DD)'
+        required: true
+      dataset_name:
+        description: 'Dataset name'
+        required: false
+        default: 'kobo_data_github_action_test'
+
+jobs:
+  run-etl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Get Storage Account Key
+        id: storage
+        run: |
+          STORAGE_KEY=$(az storage account keys list \
+            --account-name stkltdev \
+            --resource-group HQ-dev \
+            --query '[0].value' -o tsv)
+          echo "::add-mask::$STORAGE_KEY"
+          echo "key=$STORAGE_KEY" >> $GITHUB_OUTPUT
+      
+      - name: Set container name with timestamp
+        id: container
+        run: |
+          CONTAINER_NAME="klt-pipeline-$(date +%Y%m%d-%H%M%S)"
+          echo "name=$CONTAINER_NAME" >> $GITHUB_OUTPUT
+          echo "Container name: $CONTAINER_NAME"
+      
+      - name: Run KLT Container with Azure Files
+        run: |
+          az container create \
+            --resource-group HQ-dev \
+            --name ${{ steps.container.outputs.name }} \
+            --image acrimpact.azurecr.io/klt:latest \
+            --registry-login-server acrimpact.azurecr.io \
+            --registry-username acrimpact \
+            --registry-password $(az acr credential show --name acrimpact --query "passwords[0].value" -o tsv) \
+            --os-type Linux \
+            --cpu 4 \
+            --memory 8 \
+            --restart-policy Never \
+            --azure-file-volume-account-name stkltdev \
+            --azure-file-volume-account-key "${{ steps.storage.outputs.key }}" \
+            --azure-file-volume-share-name dlt-pipelines \
+            --azure-file-volume-mount-path /app/dlt_pipelines \
+            --secure-environment-variables \
+              SOURCES__KOBO_SERVER='${{ secrets.SOURCES__KOBO_SERVER }}' \
+              SOURCES__KOBO_TOKEN='${{ secrets.SOURCES__KOBO_TOKEN }}' \
+              DESTINATION__POSTGRES__CREDENTIALS__DATABASE='${{ secrets.POSTGRES_DATABASE }}' \
+              DESTINATION__POSTGRES__CREDENTIALS__USERNAME='${{ secrets.POSTGRES_USERNAME }}' \
+              DESTINATION__POSTGRES__CREDENTIALS__PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' \
+              DESTINATION__POSTGRES__CREDENTIALS__HOST='${{ secrets.POSTGRES_HOST }}' \
+              DESTINATION__POSTGRES__CREDENTIALS__PORT='5432' \
+              DESTINATION__POSTGRES__CREDENTIALS__CONNECT_TIMEOUT='15' \
+              KLT_DESTINATION='postgres' \
+              KLT_DATASET_NAME='${{ inputs.dataset_name || 'kobo_data' }}' \
+              KLT_EARLIEST_MODIFIED_DATE='${{ inputs.earliest_modified_date }}' \
+              KLT_EARLIEST_SUBMISSION_DATE='${{ inputs.earliest_submission_date }}' \
+              DLT_DATA_DIR='/app/dlt_pipelines'
+          
+          echo "✅ Container ${{ steps.container.outputs.name }} started successfully"
+          echo "View logs: az container logs --resource-group HQ-dev --name ${{ steps.container.outputs.name }} --follow"
+          echo "Check status: az container show --resource-group HQ-dev --name ${{ steps.container.outputs.name }} --query 'containers[0].instanceView.currentState'"
