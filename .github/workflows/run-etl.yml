@@ -1,0 +1,51 @@
+name: Run KLT ETL Pipeline
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Tous les jours à 2h du matin UTC
+  workflow_dispatch:  # Permet exécution manuelle
+
+jobs:
+  run-etl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Run KLT Container
+        run: |
+          az container create \
+            --resource-group HQ-dev \
+            --name klt-pipeline-$(date +%s) \
+            --image acrimpact.azurecr.io/klt:latest \
+            --registry-login-server acrimpact.azurecr.io \
+            --registry-username acrimpact \
+            --registry-password $(az acr credential show --name acrimpact --query "passwords[0].value" -o tsv) \
+            --os-type Linux \
+            --cpu 1 \
+            --memory 2 \
+            --restart-policy Never \
+            --secure-environment-variables \
+              SOURCES__KOBO_SERVER='${{ secrets.SOURCES__KOBO_SERVER }}' \
+              SOURCES__KOBO_TOKEN='${{ secrets.SOURCES__KOBO_TOKEN }}' \
+              DESTINATION__POSTGRES__CREDENTIALS__DATABASE='${{ secrets.POSTGRES_DATABASE }}' \
+              DESTINATION__POSTGRES__CREDENTIALS__USERNAME='${{ secrets.POSTGRES_USERNAME }}' \
+              DESTINATION__POSTGRES__CREDENTIALS__PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' \
+              DESTINATION__POSTGRES__CREDENTIALS__HOST='${{ secrets.POSTGRES_HOST }}' \
+              DESTINATION__POSTGRES__CREDENTIALS__PORT='5432' \
+              DESTINATION__POSTGRES__CREDENTIALS__CONNECT_TIMEOUT='15' \
+              KLT_DESTINATION='postgres' \
+              KLT_DATASET_NAME='kobo_data'
+          
+          # Attendre la fin et récupérer les logs
+          CONTAINER_NAME="klt-pipeline-$(date +%s)"
+          echo "Waiting for container to complete..."
+          az container wait --resource-group HQ-dev --name $CONTAINER_NAME --condition Terminated
+          
+          # Afficher les logs
+          az container logs --resource-group HQ-dev --name $CONTAINER_NAME
+          
+          # Supprimer le container
+          az container delete --resource-group HQ-dev --name $CONTAINER_NAME --yes

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "acrName": {
+      "value": "acrimpact"
+    },
+    "acrSku": {
+      "value": "Basic"
+    },
+    "keyVaultName": {
+      "value": "kvklt"
+    },
+    "keyVaultSku": {
+      "value": "standard"
+    },
+    "containerAppEnvName": {
+      "value": "cae-klt-dev"
+    },
+    "containerAppJobName": {
+      "value": "caj-klt-dev"
+    },
+    "cronSchedule": {
+      "value": "0 2 * * *"
+    },
+    "imageName": {
+      "value": "acrimpact.azurecr.io/klt:latest"
+    }
+  }
+}

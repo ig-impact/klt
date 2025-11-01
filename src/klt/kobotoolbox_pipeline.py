@@ -26,16 +26,16 @@ def kobo_client(kobo_token: str, kobo_server: str) -> ClientConfig:
 
 
 @dlt.source
-def kobo_source(kobo_token=dlt.secrets.value, kobo_server=dlt.secrets.value):
+def kobo_source(kobo_token=dlt.secrets.value, kobo_server=dlt.secrets.value, earliest_modified_date="2025-10-20", earliest_submission_date="2025-10-20"):
     config: RESTAPIConfig = {
         "client": kobo_client(kobo_token, kobo_server),
         "resources": [
             res_project_view(selected=False),
             res_asset(
-                earliest_modified_date="2025-10-20", parallelized=True, selected=False
+                earliest_modified_date=earliest_modified_date, parallelized=True, selected=False
             ),
             res_asset_content(parallelized=False),  # Maintenant actif pour le logging
-            res_submission(earliest_submission_date="2025-10-20", parallelized=True),
+            res_submission(earliest_submission_date=earliest_submission_date, parallelized=True),
             # res_audit(),
         ],
     }
@@ -44,7 +44,7 @@ def kobo_source(kobo_token=dlt.secrets.value, kobo_server=dlt.secrets.value):
     yield from resources
 
 
-def load_kobo(destination: str = "duckdb", dataset_name: str = "kobo"):
+def load_kobo(destination: str = "duckdb", dataset_name: str = "kobo", earliest_modified_date="2025-10-20", earliest_submission_date="2025-10-20"):
     """
     Load Kobo data to specified destination.
     
@@ -53,16 +53,20 @@ def load_kobo(destination: str = "duckdb", dataset_name: str = "kobo"):
         dataset_name: Dataset/schema name in the destination
     """
     pipeline = dlt.pipeline(
-        pipeline_name="kobotoolbox_pipeline",
+        pipeline_name="kobotoolbox_pipeline_azure",
         destination=destination,
         dataset_name=dataset_name,
         pipelines_dir="./dlt_pipelines",
+        # staging_dir="./dlt_staging",
+        progress="log",
     )
 
     logger_dlt.info(f"KoboToolbox pipeline run started - Destination: {destination}, Dataset: {dataset_name}")
     load_info = pipeline.run(
-        kobo_source(),
+        kobo_source(earliest_modified_date=earliest_modified_date, earliest_submission_date=earliest_submission_date),
         write_disposition="replace",
     )
     logger_dlt.info(f"{load_info}")
+    last_trace = load_info.last_trace
+    pipeline.run([last_trace], table_name = "trace")
     return pipeline

@@ -26,3 +26,7 @@ http_logs/
 
 # Dev folder
 dev/*
+
+
+# Azure Key Fault
+azure/init_keyvault.sh

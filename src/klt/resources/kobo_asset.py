@@ -48,6 +48,7 @@ def res_asset_content(
             "response_actions": [
                 log_asset_content_http,
                 {"status_code": 400, "action": "ignore"},
+                {"status_code": 502, "action": "ignore"},
             ],
             "paginator": {"type": "json_link", "next_url_path": "next"},
             "data_selector": "data",

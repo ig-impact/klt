@@ -29,6 +29,7 @@ def res_submission(
             "response_actions": [
                 log_submission_http,
                 {"status_code": 400, "action": "ignore"},
+                {"status_code": 502, "action": "ignore"},
             ],
             "paginator": {"type": "json_link", "next_url_path": "next"},
         },
