@@ -9,8 +9,8 @@ app = typer.Typer()
 def run(
     destination: str = typer.Option(os.getenv("KLT_DESTINATION", "postgres")),
     dataset_name: str = typer.Option(os.getenv("KLT_DATASET_NAME", "kobo_data")),
-    earliest_modified_date: str = typer.Option(os.getenv("KLT_EARLIEST_MODIFIED_DATE", "2000-01-01")),
-    earliest_submission_date: str = typer.Option(os.getenv("KLT_EARLIEST_SUBMISSION_DATE", "2000-01-01")),
+    earliest_modified_date: str = typer.Option(os.getenv("KLT_EARLIEST_MODIFIED_DATE", "2025-10-25")),
+    earliest_submission_date: str = typer.Option(os.getenv("KLT_EARLIEST_SUBMISSION_DATE", "2000-10-25")),
 ):
     """Run the KoboToolbox ETL pipeline."""
     try:

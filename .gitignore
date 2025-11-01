@@ -30,3 +30,6 @@ dev/*
 
 # Azure Key Fault
 azure/init_keyvault.sh
+
+# Github secret script
+azure/setup_github_secrets.sh
