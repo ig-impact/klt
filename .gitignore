@@ -18,3 +18,9 @@ dlt_pipelines
 
 # Log files
 *.log
+
+# marimo
+__marimo__/
+
+# hypothesis
+.hypothesis/
