@@ -9,11 +9,9 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "dlt[duckdb,workspace]>=1.17.1",
-    "hypothesis>=6.142.4",
     "loguru>=0.7.3",
     "pandas>=2.3.3",
     "pendulum>=3.1.0",
-    "pydantic[email]>=2.12.3",
     "requests-cache>=1.2.1",
     "rich>=14.2.0",
     "typer>=0.19.2",
@@ -34,11 +32,13 @@ dev = [
     "pytest-watcher>=0.4.3",
 ]
 testing = [
-    "hypothesis>=6.142.4",
-    "hypothesis-jsonschema>=0.23.1",
+    "pytest-randomly>=4.0.1",
 ]
 
 [tool.pytest.ini_options]
 addopts = [
     "--import-mode=importlib",
 ]
+
+[pytest]
+mock_use_standalone_module = true
