@@ -1,28 +1,22 @@
 import dlt
 from dlt.sources.helpers.rest_client.client import RESTClient
 
-
-from ..models import ProjectViewAssetResponse
+from ..logging import http_log
 
 
 def make_resource_kobo_asset(
     kobo_client: RESTClient,
     kobo_project_view_uid: str,
-    page_size: int = 1000,
+    name: str = "kobo_asset",
+    page_size: int = 5000,
+    parallelized: bool = True,
 ):
     @dlt.resource(
-        name="kobo_asset",
+        name=name,
         primary_key=["uid"],
-        parallelized=True,
-        columns=ProjectViewAssetResponse,
+        parallelized=parallelized,
     )
-    def kobo_asset(
-        latest_submission_time_cursor=dlt.sources.incremental(
-            cursor_path="deployment__last_submission_time",
-            initial_value="2025-01-01T00:00:00Z",
-            on_cursor_value_missing="include",
-        ),
-    ):
+    def kobo_asset():
         path = f"/api/v2/project-views/{kobo_project_view_uid}/assets/"
         params = {
             "format": "json",
@@ -33,18 +27,22 @@ def make_resource_kobo_asset(
             params=params,
             data_selector="results",
             allow_redirects=False,
+            hooks={"response": [http_log]},
         ):
-            for asset in page:
-                submission_count: int = asset.get("deployment__submission_count") or 0
-                if submission_count == 0:
-                    continue
-                yield asset
+            yield from page
 
-    # kobo_asset.add_map(debug_asset)
+    kobo_asset.add_filter(lambda ka: (ka.get("deployment__submission_count") or 0) > 0)
     return kobo_asset
 
 
-def debug_asset(asset):
-    import ipdb
+last_submission_time_hint = dlt.sources.incremental(
+    cursor_path="deployment__last_submission_time",
+    initial_value="2025-11-01T00:00:01.000Z",
+    on_cursor_value_missing="include",
+)
 
-    ipdb.set_trace()
+date_modified_hint = dlt.sources.incremental(
+    cursor_path="date_modified",
+    initial_value="2025-11-01T00:00:01.000Z",
+    on_cursor_value_missing="raise",
+)
