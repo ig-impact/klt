@@ -30,15 +30,14 @@ dev = [
     "pytest>=8.4.2",
     "pytest-sugar>=1.1.1",
     "pytest-watcher>=0.4.3",
-]
-testing = [
     "pytest-randomly>=4.0.1",
+    "pytest-xdist",
+    "pytest-deadfixtures>=2.2.1",
+    "pytest-mock>=3.15.1",
 ]
 
 [tool.pytest.ini_options]
 addopts = [
     "--import-mode=importlib",
 ]
-
-[pytest]
 mock_use_standalone_module = true
