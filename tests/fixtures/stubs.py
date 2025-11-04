@@ -1,26 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
 
 import pytest
 
-from klt.resources.kobo_asset import (
-    date_modified_hint,
-    last_submission_time_hint,
-    make_resource_kobo_asset,
-)
-
-
-@pytest.fixture(scope="function")
-def rest_pages() -> List[List[Dict[str, Any]]]:
-    """
-    Mutate me in your Arrange step:
-        rest_pages[:] = [
-            [ {...}, {...} ],   # page 1
-            [ {...} ],          # page 2
-        ]
-    """
-    return []
+from klt.resources.kobo_asset import (date_modified_hint,
+                                      last_submission_time_hint,
+                                      make_resource_kobo_asset)
 
 
 class RESTClientStub:
