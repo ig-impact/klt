@@ -67,23 +67,33 @@ def run_pipeline_once(pipeline: TPipeline):
     Execute the pipeline with a resource or list[dict].
     Always pass table_name explicitly: run_pipeline_once(resource, table_name="my_table")
     """
+
     def _run(data_or_resource, *, table_name: str | None = None, **kwargs):
         if table_name is None:
-            return pipeline.run(data_or_resource, **kwargs)          # resource path
-        return pipeline.run(data_or_resource, table_name=table_name, **kwargs)  # raw data path
+            return pipeline.run(data_or_resource, **kwargs)  # resource path
+        return pipeline.run(
+            data_or_resource, table_name=table_name, **kwargs
+        )  # raw data path
+
     return _run
+
 
 @pytest.fixture(scope="function")
 def run_twice(run_pipeline_once, rest_client_stub):
     def _run(resource, *, table, first_pages, second_pages, write_disposition="append"):
         # First run
         rest_client_stub.set(*first_pages)
-        run_pipeline_once(resource, table_name=table, write_disposition=write_disposition)
+        run_pipeline_once(
+            resource, table_name=table, write_disposition=write_disposition
+        )
         # Second run
         rest_client_stub.set(*second_pages)
-        run_pipeline_once(resource, table_name=table, write_disposition=write_disposition)
+        run_pipeline_once(
+            resource, table_name=table, write_disposition=write_disposition
+        )
 
     return _run
+
 
 @pytest.fixture(scope="function", autouse=True)
 def query(duckdb_conn, dataset_name) -> Callable[[str], list[tuple]]:

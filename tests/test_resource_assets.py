@@ -1,8 +1,10 @@
 import pytest
 
-from klt.resources.kobo_asset import (date_modified_hint,
-                                      last_submission_time_hint,
-                                      make_resource_kobo_asset)
+from klt.resources.kobo_asset import (
+    date_modified_hint,
+    last_submission_time_hint,
+    make_resource_kobo_asset,
+)
 
 
 def test_filters_submission_count(run_pipeline_once, query, rest_client_stub):

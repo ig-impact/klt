@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-
 import pytest
 
-from klt.resources.kobo_asset import (date_modified_hint,
-                                      last_submission_time_hint,
-                                      make_resource_kobo_asset)
+from klt.resources.kobo_asset import (
+    date_modified_hint,
+    last_submission_time_hint,
+    make_resource_kobo_asset,
+)
 
 
 class RESTClientStub:
@@ -17,7 +18,7 @@ class RESTClientStub:
     def __init__(self):
         self._pages = []
 
-    def set(self, *pages):
+    def set(self, *pages: list[dict]):
         # pages: ([{...}, {...}], [{...}], ...)
         self._pages = list(pages)
 
