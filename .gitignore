@@ -27,9 +27,15 @@ http_logs/
 # Dev folder
 dev/*
 
+# MacOS files
+.DS_Store
+
 
 # Azure Key Fault
 azure/init_keyvault.sh
 
 # Github secret script
 azure/setup_github_secrets.sh
+
+# Debug folder
+debug/*

@@ -7,14 +7,14 @@
 # EXTRACT STAGE (I/O-bound)
 # ----------------------------
 [extract]
+workers = 10  # default value: 5s
 next_item_mode="round_robin"
-workers = 25   
-retry_count = 3    # Retries on failed requests
+
 
 # set buffers only in extract stage - for all sources
 [sources.data_writer]
-buffer_max_items=100 # set buffer size for extract and normalize stages
-file_max_bytes=100000000 # set files to rotate  when the filesize exceeds 100MB for extract and normalize stages
+buffer_max_items=500 # set buffer size for extract and normalize stages
+file_max_bytes=5000000 # set files to rotate when the filesize exceeds 1MB for extract and normalize stages
 
 
 # ----------------------------
@@ -22,28 +22,26 @@ file_max_bytes=100000000 # set files to rotate  when the filesize exceeds 100MB 
 # ----------------------------
 
 [normalize]
-workers=3  # Process pool (≈ #CPU − 1 for stability)
+workers = 3  # default value: 5
 
 [normalize.data_writer]
-buffer_max_items=1000 # set buffer size for extract and normalize stages
-file_max_bytes=500000000 # set files to rotate  when the filesize exceeds 50MB for extract and normalize stages
+buffer_max_items=500 # set buffer size for extract and normalize stages
+file_max_bytes=5000000 # set files to rotate  when the filesize exceeds 5MB for extract and normalize stages
               
 
 # ----------------------------
 # LOAD STAGE (I/O-bound)
 # ----------------------------
 [load]
-workers = 25                       # Thread pool for parallel file uploads
-max_parallel_load_jobs = 25        # Same as workers (explicit for clarity)
-retry_count = 3                    # Retry failed uploads
+workers = 10                # Thread pool for parallel file uploads (réduit pour éviter saturation PostgreSQL)
 
 [runtime]
-log_level="INFO"  # the system log level of dlt
+log_level="DEBUG"  # the system log level of dlt
 dlthub_telemetry = false
 http_show_error_body = true
 http_max_error_body_length = 8192  # Maximum characters (default: 8192)
 # Retry 
 request_max_attempts = 10  # Stop after 10 retry attempts
 request_backoff_factor = 1.5  # Multiplier applied to the exponential delays. Default is 1
-request_timeout = 60  # Timeout in seconds
-request_max_retry_delay = 30  # Cap exponential delay to 30 seconds
+request_timeout = 300  # Timeout in seconds (5 minutes pour API lente)
+request_max_retry_delay = 60  # Cap exponential delay to 60 seconds

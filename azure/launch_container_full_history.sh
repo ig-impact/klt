@@ -8,7 +8,8 @@ az acr login --name acrimpact
 docker buildx build --platform linux/amd64 -t acrimpact.azurecr.io/klt:latest --push .
 
 # Supprimer le container s'il existe déjà
-az container delete --resource-group HQ-dev --name klt-kobo-2025-hist --yes 2>/dev/null || true
+az container delete --resource-group HQ-dev --name klt-kobo-full-history --yes 2>/dev/null || true
+
 
 # Récupérer la clé du storage account
 STORAGE_KEY=$(az storage account keys list \
@@ -18,7 +19,7 @@ STORAGE_KEY=$(az storage account keys list \
 
 az container create \
   --resource-group HQ-dev \
-  --name klt-kobo-2025-hist \
+  --name klt-kobo-full-history \
   --image acrimpact.azurecr.io/klt:latest \
   --registry-login-server acrimpact.azurecr.io \
   --registry-username acrimpact \
@@ -40,19 +41,19 @@ az container create \
     DESTINATION__POSTGRES__CREDENTIALS__HOST='atlas-pg-hq-dev.postgres.database.azure.com' \
     DESTINATION__POSTGRES__CREDENTIALS__PORT='5432' \
     DESTINATION__POSTGRES__CREDENTIALS__CONNECT_TIMEOUT='15' \
-    KLT_PIPELINE_NAME=kobo_load_2025 \
+    KLT_PIPELINE_NAME=kobo_load_full_history \
     KLT_DESTINATION=postgres \
-    KLT_DATASET_NAME=kobo_data_2025 \
-    KLT_EARLIEST_MODIFIED_DATE=2025-01-01 \
-    KLT_EARLIEST_SUBMISSION_DATE=2025-01-01 \
+    KLT_DATASET_NAME=kobo_full_history \
+    KLT_EARLIEST_MODIFIED_DATE=2001-01-01 \
+    KLT_EARLIEST_SUBMISSION_DATE=2001-01-01 \
     DLT_DATA_DIR=/app/dlt_pipelines 
 
 # Voir les logs
-az container logs --resource-group HQ-dev --name klt-kobo-2025-hist --follow
+az container logs --resource-group HQ-dev --name klt-kobo-full-history --follow
 
 # Supprimer après test
 # az container delete --resource-group HQ-dev --name klt-test --yes
 
 
-az container show --resource-group HQ-dev --name klt-kobo-2025-hist  --query "containers[0].instanceView.currentState" -o table
+az container show --resource-group HQ-dev --name klt-kobo-full-history  --query "containers[0].instanceView.currentState" -o table
 

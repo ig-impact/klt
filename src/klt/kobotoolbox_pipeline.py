@@ -32,9 +32,9 @@ def kobo_source(kobo_token=dlt.secrets.value, kobo_server=dlt.secrets.value, ear
         "resources": [
             res_project_view(selected=False),
             res_asset(
-                earliest_modified_date=earliest_modified_date, parallelized=True, selected=False
+                earliest_modified_date=earliest_modified_date, parallelized=True, selected=True
             ),
-            res_asset_content(parallelized=False),  # Maintenant actif pour le logging
+            res_asset_content(parallelized=True),  # Maintenant actif pour le logging
             res_submission(earliest_submission_date=earliest_submission_date, parallelized=True),
             # res_audit(),
         ],
@@ -44,7 +44,7 @@ def kobo_source(kobo_token=dlt.secrets.value, kobo_server=dlt.secrets.value, ear
     yield from resources
 
 
-def load_kobo(destination: str = "duckdb", dataset_name: str = "kobo", earliest_modified_date="2025-10-20", earliest_submission_date="2025-10-20"):
+def load_kobo(pipeline_name, destination: str = "duckdb", dataset_name: str = "kobo", earliest_modified_date="2025-10-31", earliest_submission_date="2025-10-31"):
     """
     Load Kobo data to specified destination.
     
@@ -53,12 +53,12 @@ def load_kobo(destination: str = "duckdb", dataset_name: str = "kobo", earliest_
         dataset_name: Dataset/schema name in the destination
     """
     pipeline = dlt.pipeline(
-        pipeline_name="kobotoolbox_pipeline_azure",
+        pipeline_name=pipeline_name,
         destination=destination,
         dataset_name=dataset_name,
-        pipelines_dir="./dlt_pipelines",
-        # staging_dir="./dlt_staging",
+        # pipelines_dir="./dlt_pipelines",
         progress="log",
+        # dev_mode=True,
     )
 
     logger_dlt.info(f"KoboToolbox pipeline run started - Destination: {destination}, Dataset: {dataset_name}")
@@ -67,6 +67,6 @@ def load_kobo(destination: str = "duckdb", dataset_name: str = "kobo", earliest_
         write_disposition="replace",
     )
     logger_dlt.info(f"{load_info}")
-    last_trace = load_info.last_trace
+    last_trace = pipeline.last_trace
     pipeline.run([last_trace], table_name = "trace")
     return pipeline
