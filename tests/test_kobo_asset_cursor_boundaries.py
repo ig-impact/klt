@@ -6,7 +6,7 @@ from klt.resources.kobo_asset import (
 
 
 def test_date_modified_equality_is_loaded_greater_is_loaded(
-    run_twice, query, rest_client_stub
+    run_twice, get_table_uids, rest_client_stub
 ):
     base = make_resource_kobo_asset(
         rest_client_stub,
@@ -45,12 +45,11 @@ def test_date_modified_equality_is_loaded_greater_is_loaded(
         resource, table=table, first_pages=first_response, second_pages=second_response
     )
 
-    rows = query(f'SELECT uid, date_modified FROM "{table}" ORDER BY uid')
-    assert [r[0] for r in rows] == ["eq", "gt", "x"]
+    assert get_table_uids(table) == ["eq", "gt", "x"]
 
 
 def test_last_submission_time_equality_is_loaded_greater_is_loaded(
-    run_twice, query, rest_client_stub
+    run_twice, get_table_uids, rest_client_stub
 ):
     base = make_resource_kobo_asset(
         rest_client_stub,
@@ -89,13 +88,10 @@ def test_last_submission_time_equality_is_loaded_greater_is_loaded(
         resource, table=table, first_pages=first_response, second_pages=second_response
     )
 
-    rows = query(
-        f'SELECT uid, deployment__last_submission_time FROM "{table}" ORDER BY uid'
-    )
-    assert [r[0] for r in rows] == ["eq", "gt", "x"]
+    assert get_table_uids(table) == ["eq", "gt", "x"]
 
 
-def test_date_modified_order_indifferent(run_twice, query, rest_client_stub):
+def test_date_modified_order_indifferent(run_twice, get_table_uids, rest_client_stub):
     base = make_resource_kobo_asset(
         rest_client_stub,
         kobo_project_view_uid="TEST",
@@ -133,11 +129,10 @@ def test_date_modified_order_indifferent(run_twice, query, rest_client_stub):
         resource, table=table, first_pages=first_response, second_pages=second_response
     )
 
-    rows = query(f'SELECT uid, date_modified FROM "{table}" ORDER BY uid')
-    assert [r[0] for r in rows] == ["eq", "gt", "x"]
+    assert get_table_uids(table) == ["eq", "gt", "x"]
 
 
-def test_no_duplicates(run_twice, query, rest_client_stub):
+def test_no_duplicates(run_twice, get_table_uids, rest_client_stub):
     base = make_resource_kobo_asset(
         rest_client_stub,
         kobo_project_view_uid="TEST",
@@ -166,5 +161,4 @@ def test_no_duplicates(run_twice, query, rest_client_stub):
         resource, table=table, first_pages=first_response, second_pages=first_response
     )
 
-    rows = query(f'SELECT uid, date_modified FROM "{table}" ORDER BY uid')
-    assert [r[0] for r in rows] == ["eq", "x"]
+    assert get_table_uids(table) == ["eq", "x"]

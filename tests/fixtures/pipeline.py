@@ -103,7 +103,7 @@ def query(duckdb_conn, dataset_name) -> Callable[[str], list[tuple]]:
         query(f'SELECT COUNT(*) FROM "{table_name}"')
         query("SHOW TABLES")  # works too
     """
-    # Ensure we’re pointing at the pipeline’s schema for unqualified names if needed
+    # Ensure we're pointing at the pipeline's schema for unqualified names if needed
     duckdb_conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{dataset_name}"')
     duckdb_conn.execute(f"SET schema '{dataset_name}'")
 
@@ -111,3 +111,53 @@ def query(duckdb_conn, dataset_name) -> Callable[[str], list[tuple]]:
         return duckdb_conn.execute(sql).fetchall()
 
     return _q
+
+
+@pytest.fixture(scope="function")
+def assert_table_count(query):
+    """
+    Assert exact row count in a table.
+    Usage:
+        assert_table_count("my_table", 5)
+    """
+
+    def _assert(table_name: str, expected: int):
+        [(actual,)] = query(f'SELECT COUNT(*) FROM "{table_name}"')
+        assert actual == expected, f"Expected {expected} rows, got {actual}"
+
+    return _assert
+
+
+@pytest.fixture(scope="function")
+def get_table_uids(query):
+    """
+    Get all UIDs from a table, ordered by uid.
+    Usage:
+        uids = get_table_uids("my_table")
+        assert uids == ["a", "b", "c"]
+    """
+
+    def _get(table_name: str) -> list[str]:
+        rows = query(f'SELECT uid FROM "{table_name}" ORDER BY uid')
+        return [r[0] for r in rows]
+
+    return _get
+
+
+@pytest.fixture(scope="function")
+def get_table_column(query):
+    """
+    Get all values from a single column, with optional ordering.
+    Usage:
+        values = get_table_column("my_table", "uid", order_by="uid")
+        assert values == ["a", "b", "c"]
+    """
+
+    def _get(table_name: str, column: str, *, order_by: str | None = None) -> list:
+        sql = f'SELECT {column} FROM "{table_name}"'
+        if order_by:
+            sql += f" ORDER BY {order_by}"
+        rows = query(sql)
+        return [r[0] for r in rows]
+
+    return _get

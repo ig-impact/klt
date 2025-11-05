@@ -7,7 +7,9 @@ from klt.resources.kobo_asset import (
 )
 
 
-def test_filters_submission_count(run_pipeline_once, query, rest_client_stub):
+def test_filters_submission_count(
+    run_pipeline_once, assert_table_count, rest_client_stub
+):
     # Arrange
     rest_client_stub.set(
         [
@@ -23,11 +25,12 @@ def test_filters_submission_count(run_pipeline_once, query, rest_client_stub):
     run_pipeline_once(resource, table_name=table, write_disposition="append")
 
     # Assert
-    [(cnt,)] = query(f'SELECT COUNT(*) FROM "{table}"')
-    assert cnt == 2
+    assert_table_count(table, 2)
 
 
-def test_paginates_across_pages(run_pipeline_once, query, rest_client_stub):
+def test_paginates_across_pages(
+    run_pipeline_once, assert_table_count, rest_client_stub
+):
     # Arrange: two pages; one filtered row on the second
     rest_client_stub.set(
         [
@@ -46,8 +49,7 @@ def test_paginates_across_pages(run_pipeline_once, query, rest_client_stub):
     run_pipeline_once(resource, table_name=table, write_disposition="append")
 
     # Assert
-    [(cnt,)] = query(f'SELECT COUNT(*) FROM "{table}"')
-    assert cnt == 3
+    assert_table_count(table, 3)
 
 
 def test_date_modified_missing_raises(run_pipeline_once, rest_client_stub):
@@ -64,7 +66,7 @@ def test_date_modified_missing_raises(run_pipeline_once, rest_client_stub):
 
 
 def test_last_submission_time_missing_is_included(
-    run_pipeline_once, query, rest_client_stub
+    run_pipeline_once, assert_table_count, rest_client_stub
 ):
     # Arrange: passes submission filter but lacks deployment__last_submission_time
     rest_client_stub.set([{"uid": "y", "deployment__submission_count": 1}])
@@ -78,5 +80,4 @@ def test_last_submission_time_missing_is_included(
     run_pipeline_once(resource, table_name=table, write_disposition="append")
 
     # Assert
-    [(cnt,)] = query(f'SELECT COUNT(*) FROM "{table}"')
-    assert cnt == 1
+    assert_table_count(table, 1)
