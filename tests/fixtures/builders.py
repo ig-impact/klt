@@ -78,3 +78,60 @@ def asset_page_builder(asset_builder) -> Callable[..., List[Dict]]:
         return [asset_builder()]
 
     return build_page
+
+
+@pytest.fixture(scope="function")
+def submission_builder(base_time) -> Callable[..., Dict]:
+    """
+    Factory for submission dicts with sensible defaults.
+
+    Usage:
+        # Simple submission
+        submission_builder(id=123)
+
+        # With questions
+        submission_builder(
+            id=123,
+            questions={"q1": "answer1", "q2": ["opt1", "opt2"]}
+        )
+
+        # With custom time offset (relative to base_time)
+        submission_builder(
+            submission_time_offset=timedelta(hours=2)
+        )
+    """
+
+    def _format_timestamp(dt: datetime) -> str:
+        """Format datetime to ISO8601 with millisecond precision and Z suffix."""
+        iso_str = dt.isoformat(timespec="milliseconds")
+        return iso_str.replace("+00:00", "Z")
+
+    def build(
+        *,
+        id: Optional[int] = None,
+        uuid_val: Optional[str] = None,
+        submission_time_offset: timedelta = timedelta(0),
+        questions: Optional[Dict] = None,
+        metadata: Optional[Dict] = None,
+        extra: Optional[Dict] = None,
+    ) -> Dict:
+        id = id if id is not None else 1
+        uuid_val = uuid_val or str(uuid.uuid4())
+
+        submission = {
+            "_id": id,
+            "_uuid": uuid_val,
+            "_submission_time": _format_timestamp(base_time + submission_time_offset),
+            "_submitted_by": "test_user",
+        }
+
+        if metadata:
+            submission.update(metadata)
+        if questions:
+            submission.update(questions)
+        if extra:
+            submission.update(extra)
+
+        return submission
+
+    return build

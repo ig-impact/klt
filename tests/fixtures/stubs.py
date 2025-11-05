@@ -13,16 +13,35 @@ class RESTClientStub:
     """
     - Use .set(*pages) where each page is a list[dict]
     - .paginate(...) yields those pages; extra kwargs are ignored
+    - Use .set_for_path(pattern, *pages) for path-specific responses
     """
 
     def __init__(self):
         self._pages = []
+        self._path_responses = {}  # path pattern -> pages
 
     def set(self, *pages: list[dict]):
         # pages: ([{...}, {...}], [{...}], ...)
         self._pages = list(pages)
 
+    def set_for_path(self, path_pattern: str, *pages: list[dict]):
+        """
+        Set pages for specific path pattern.
+
+        Usage:
+            stub.set_for_path("project-views", [asset1, asset2])
+            stub.set_for_path("assets/uid-1/data", [submission1], [submission2])
+        """
+        self._path_responses[path_pattern] = list(pages)
+
     def paginate(self, *, path, params=None, **kwargs):
+        # Check if path matches any pattern
+        for pattern, pages in self._path_responses.items():
+            if pattern in path:
+                for page in pages:
+                    yield page
+                return
+        # Fall back to default pages
         for page in self._pages:
             yield page
 
@@ -161,3 +180,39 @@ def kobo_asset_all_configs(request, rest_client_stub):
     ).apply_hints(incremental=hint)
 
     return resource, cursor_field, on_missing, parallelized_val
+
+
+@pytest.fixture(scope="function")
+def kobo_submission_factory(rest_client_stub, kobo_asset_factory):
+    """
+    Factory for kobo_submission resources.
+
+    Usage:
+        # Default: creates own asset resource
+        resource = kobo_submission_factory()
+
+        # With custom asset
+        asset = kobo_asset_factory(hint=date_modified_hint)
+        resource = kobo_submission_factory(asset=asset)
+
+        # With custom earliest_submission_date
+        resource = kobo_submission_factory(
+            earliest_submission_date="2025-02-01T00:00:00Z"
+        )
+    """
+
+    def _build(asset=None, earliest_submission_date="2025-01-01T00:00:00Z"):
+        if asset is None:
+            # Create a default asset resource with no incremental hint
+            # This ensures we get all assets without filtering
+            asset = kobo_asset_factory(hint=None)
+
+        from klt.resources.kobo_submission import make_resource_kobo_submission
+
+        return make_resource_kobo_submission(
+            kobo_client=rest_client_stub,
+            kobo_asset=asset,
+            earliest_submission_date=earliest_submission_date,
+        )
+
+    return _build
