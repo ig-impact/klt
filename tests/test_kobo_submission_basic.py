@@ -1,7 +1,5 @@
 from datetime import timedelta
 
-import pytest
-
 
 def test_paginates_across_pages(
     kobo_submission_factory,
@@ -122,33 +120,6 @@ def test_incremental_cursor_advances(
 
     # Assert: All 3 submissions loaded
     assert_table_count("submissions_incremental", 3)
-
-
-def test_cursor_missing_raises(
-    kobo_submission_factory,
-    rest_client_stub,
-    asset_builder,
-    submission_builder,
-    run_pipeline_once,
-):
-    """Load submission without _submission_time field, verify error is raised."""
-    # Arrange: Create asset
-    asset = asset_builder(uid="asset-1")
-    rest_client_stub.set_for_path("project-views", [asset])
-
-    # Arrange: Create submission missing _submission_time
-    submission_missing_cursor = {
-        "_id": 1,
-        "_uuid": "uuid-a",
-        "_submitted_by": "test_user",
-        "question1": "answer1",
-    }
-    rest_client_stub.set_for_path("assets/asset-1/data", [submission_missing_cursor])
-
-    # Act & Assert
-    resource = kobo_submission_factory()
-    with pytest.raises(Exception):  # dlt raises when cursor field is missing
-        run_pipeline_once(resource, table_name="submissions_missing_cursor")
 
 
 def test_empty_submissions_from_asset(

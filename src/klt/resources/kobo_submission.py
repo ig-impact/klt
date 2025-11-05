@@ -21,7 +21,18 @@ def make_resource_kobo_submission(
             cursor_path="_submission_time", initial_value=earliest_submission_date
         ),
     ):
+        """
+        Fetch submissions for an asset using incremental loading.
+
+        Uses a global cursor based on the maximum _submission_time from all previously
+        loaded submissions across all assets. Each incremental run queries the API for
+        submissions with _submission_time >= cursor_value.
+
+        The cursor advances to the maximum _submission_time from actual loaded data,
+        not from asset metadata fields like deployment__last_submission_time.
+        """
         asset_uid = asset["uid"]
+
         path = f"/api/v2/assets/{asset_uid}/data/"
         params = {
             "query": json.dumps(

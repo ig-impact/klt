@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 import pytest
 
 from klt.resources.kobo_asset import (
@@ -35,15 +36,52 @@ class RESTClientStub:
         self._path_responses[path_pattern] = list(pages)
 
     def paginate(self, *, path, params=None, **kwargs):
+        """
+        Simulate KoboToolbox API pagination with server-side filtering.
+
+        Parses query params for _submission_time filtering and applies it
+        to returned pages, mimicking the real API behavior.
+        """
+        import json as json_module
+
+        # Extract cursor from params if present
+        cursor_value = None
+        if params and "query" in params:
+            try:
+                query = json_module.loads(params["query"])
+                if "_submission_time" in query and "$gte" in query["_submission_time"]:
+                    cursor_value = query["_submission_time"]["$gte"]
+            except (json_module.JSONDecodeError, KeyError, TypeError):
+                pass
+
         # Check if path matches any pattern
         for pattern, pages in self._path_responses.items():
             if pattern in path:
                 for page in pages:
-                    yield page
+                    if cursor_value:
+                        # Filter submissions by _submission_time >= cursor
+                        filtered_page = [
+                            item
+                            for item in page
+                            if item.get("_submission_time", "") >= cursor_value
+                        ]
+                        yield filtered_page
+                    else:
+                        yield page
                 return
+
         # Fall back to default pages
         for page in self._pages:
-            yield page
+            if cursor_value:
+                # Filter submissions by _submission_time >= cursor
+                filtered_page = [
+                    item
+                    for item in page
+                    if item.get("_submission_time", "") >= cursor_value
+                ]
+                yield filtered_page
+            else:
+                yield page
 
 
 @pytest.fixture()
