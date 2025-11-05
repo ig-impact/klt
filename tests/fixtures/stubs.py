@@ -33,34 +33,131 @@ def rest_client_stub():
 
 
 @pytest.fixture(scope="function")
-def kobo_asset_for_assets_factory(rest_client_stub):
+def kobo_asset_factory(rest_client_stub):
     """
-    Factory that builds your real kobo_asset resource with date_modified hint.
-    """
+    Universal factory for kobo_asset resources with full control.
 
-    def _build(kobo_project_view_uid: str = "TEST", *, name: str = "kobo_asset"):
-        return make_resource_kobo_asset(
-            kobo_client=rest_client_stub,
-            kobo_project_view_uid=kobo_project_view_uid,
-            name=name,
-        ).apply_hints(incremental=date_modified_hint)
+    Usage:
+        # No incremental hint
+        resource = kobo_asset_factory()
 
-    return _build
+        # With date_modified hint
+        resource = kobo_asset_factory(hint=date_modified_hint)
 
+        # With parallelization disabled
+        resource = kobo_asset_factory(hint=date_modified_hint, parallelized=False)
 
-@pytest.fixture(scope="function")
-def kobo_asset_for_data_factory(rest_client_stub):
-    """
-    Factory that builds your real kobo_asset resource with last_submission_time hint.
+        # Custom name and project view
+        resource = kobo_asset_factory(
+            hint=last_submission_time_hint,
+            name="my_asset",
+            kobo_project_view_uid="ABC123"
+        )
     """
 
     def _build(
-        kobo_project_view_uid: str = "TEST", *, name: str = "kobo_asset_for_data"
+        hint=None,
+        parallelized=True,
+        kobo_project_view_uid="TEST",
+        name="kobo_asset",
     ):
-        return make_resource_kobo_asset(
+        resource = make_resource_kobo_asset(
             kobo_client=rest_client_stub,
             kobo_project_view_uid=kobo_project_view_uid,
             name=name,
-        ).apply_hints(incremental=last_submission_time_hint)
+            parallelized=parallelized,
+        )
+        if hint is not None:
+            resource = resource.apply_hints(incremental=hint)
+        return resource
 
     return _build
+
+
+@pytest.fixture(
+    params=[
+        ("date_modified", date_modified_hint, "raise"),
+        ("deployment__last_submission_time", last_submission_time_hint, "include"),
+    ],
+    ids=["date_modified", "last_submission_time"],
+)
+def cursor_config(request):
+    """
+    Parametrize tests over both cursor types.
+
+    Returns tuple of (cursor_field_name, hint, on_cursor_value_missing_behavior).
+    The cursor_field_name matches the actual field path used in the hint.
+
+    Usage:
+        def test_something(cursor_config, kobo_asset_factory):
+            cursor_field, hint, on_missing = cursor_config
+            resource = kobo_asset_factory(hint=hint)
+            # Test runs twice: once per cursor type
+    """
+    return request.param
+
+
+@pytest.fixture(params=[True, False], ids=["parallel", "serial"])
+def parallelized(request):
+    """
+    Parametrize tests over parallelized=True/False.
+
+    Usage:
+        def test_something(parallelized, kobo_asset_factory):
+            resource = kobo_asset_factory(parallelized=parallelized)
+            # Test runs twice: once for parallel, once for serial
+    """
+    return request.param
+
+
+@pytest.fixture(
+    params=[
+        (date_modified_hint, "date_modified", "raise", True),
+        (date_modified_hint, "date_modified", "raise", False),
+        (
+            last_submission_time_hint,
+            "deployment__last_submission_time",
+            "include",
+            True,
+        ),
+        (
+            last_submission_time_hint,
+            "deployment__last_submission_time",
+            "include",
+            False,
+        ),
+    ],
+    ids=[
+        "date_modified-parallel",
+        "date_modified-serial",
+        "last_submission_time-parallel",
+        "last_submission_time-serial",
+    ],
+)
+def kobo_asset_all_configs(request, rest_client_stub):
+    """
+    Parametrized resource testing ALL combinations of cursor type and parallelization.
+
+    Returns tuple of (resource, cursor_field, on_cursor_value_missing, parallelized).
+
+    Usage:
+        def test_edge_case(kobo_asset_all_configs):
+            resource, cursor_field, on_missing, parallelized = kobo_asset_all_configs
+            # Test automatically runs 4 times with all combinations
+
+    Use this fixture when you want comprehensive coverage across all configurations.
+    Use kobo_asset_factory + cursor_config/parallelized for more control.
+    """
+    hint, cursor_field, on_missing, parallelized_val = request.param
+
+    # Generate unique table name based on config
+    name_suffix = f"{cursor_field.replace('deployment__', '')}_{parallelized_val}"
+
+    resource = make_resource_kobo_asset(
+        kobo_client=rest_client_stub,
+        kobo_project_view_uid="TEST",
+        name=f"asset_{name_suffix}",
+        parallelized=parallelized_val,
+    ).apply_hints(incremental=hint)
+
+    return resource, cursor_field, on_missing, parallelized_val

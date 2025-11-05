@@ -1,7 +1,11 @@
 import dlt
 from dlt.sources.helpers.rest_client.client import RESTClient
 
-from klt.resources import make_resource_kobo_asset, make_resource_kobo_submission
+from klt.resources import (
+    last_submission_time_hint,
+    make_resource_kobo_asset,
+    make_resource_kobo_submission,
+)
 from klt.rest_client import make_rest_client
 
 
@@ -15,7 +19,7 @@ def kobo_source(
 
     kobo_asset = make_resource_kobo_asset(
         kobo_client, kobo_project_view_uid=kobo_project_view
-    )
+    ).apply_hints(incremental=last_submission_time_hint)
 
     kobo_submission = make_resource_kobo_submission(kobo_client, kobo_asset)
 

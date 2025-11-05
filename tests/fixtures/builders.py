@@ -10,10 +10,12 @@ import pytest
 @pytest.fixture(scope="session")
 def base_time() -> datetime:
     """
-    A fixed, timezone-aware baseline. Derive all timestamps as base_time ± delta
-    to keep tests deterministic and readable.
+    A fixed, timezone-aware baseline matching the initial_value in incremental hints.
+    Derive all timestamps as base_time ± delta to keep tests deterministic and readable.
+
+    This corresponds to "2025-11-01T00:00:01.000Z" (the initial_value in kobo_asset hints).
     """
-    return datetime(2025, 1, 16, 9, 0, 0, tzinfo=timezone.utc)
+    return datetime(2025, 11, 1, 0, 0, 1, tzinfo=timezone.utc)
 
 
 @pytest.fixture(scope="function")
@@ -22,6 +24,13 @@ def asset_builder(base_time) -> Callable[..., Dict]:
     Tiny factory for a single 'asset' dict with sensible defaults.
     Override any field via kwargs; most common overrides are shown as parameters.
     """
+
+    def _format_timestamp(dt: datetime) -> str:
+        """Format datetime to ISO8601 with millisecond precision and Z suffix."""
+        # Format with microseconds, then truncate to milliseconds (3 digits)
+        iso_str = dt.isoformat(timespec="milliseconds")
+        # Replace timezone offset with Z
+        return iso_str.replace("+00:00", "Z")
 
     def build(
         *,
@@ -35,10 +44,10 @@ def asset_builder(base_time) -> Callable[..., Dict]:
         row = {
             "uid": uid,
             "deployment__submission_count": submission_count,
-            "deployment__last_submission_time": (
+            "deployment__last_submission_time": _format_timestamp(
                 base_time + last_submission_offset
-            ).isoformat(),
-            "date_modified": (base_time + modified_offset).isoformat(),
+            ),
+            "date_modified": _format_timestamp(base_time + modified_offset),
         }
         if extra:
             row.update(extra)
