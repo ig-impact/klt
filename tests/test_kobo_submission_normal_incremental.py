@@ -57,9 +57,7 @@ def test_single_asset_cursor_advances_to_max_submission_time(
     rest_client_stub.set_for_path("assets/asset-1/data", submissions_run1)
 
     # Act: Run 1
-    resource = kobo_submission_factory(
-        earliest_submission_date="2025-11-01T00:00:01.000Z"
-    )
+    resource = kobo_submission_factory(submission_time_start="2025-11-01T00:00:01.000Z")
     run_pipeline_once(resource, table_name="kobo_submission")
 
     # Assert: All 3 submissions loaded in run 1
@@ -145,9 +143,7 @@ def test_multiple_assets_global_cursor_uses_max_across_all(
     rest_client_stub.set_for_path("assets/asset-2/data", submissions_asset2_run1)
 
     # Act: Run 1
-    resource = kobo_submission_factory(
-        earliest_submission_date="2025-11-01T00:00:01.000Z"
-    )
+    resource = kobo_submission_factory(submission_time_start="2025-11-01T00:00:01.000Z")
     run_pipeline_once(resource, table_name="kobo_submission")
 
     # Assert: All 4 submissions loaded
@@ -211,9 +207,7 @@ def test_new_asset_appears_uses_global_cursor(
     rest_client_stub.set_for_path("assets/asset-1/data", submissions_asset1)
 
     # Act: Run 1
-    resource = kobo_submission_factory(
-        earliest_submission_date="2025-11-01T00:00:01.000Z"
-    )
+    resource = kobo_submission_factory(submission_time_start="2025-11-01T00:00:01.000Z")
     run_pipeline_once(resource, table_name="kobo_submission")
 
     # Assert: 2 submissions from asset-1
@@ -286,9 +280,7 @@ def test_cursor_from_actual_data_not_asset_metadata(
     rest_client_stub.set_for_path("assets/asset-1/data", submissions_run1)
 
     # Act: Run 1
-    resource = kobo_submission_factory(
-        earliest_submission_date="2025-11-01T00:00:01.000Z"
-    )
+    resource = kobo_submission_factory(submission_time_start="2025-11-01T00:00:01.000Z")
     run_pipeline_once(resource, table_name="kobo_submission")
 
     # Arrange: Run 2 - Add submission at T+45 (between actual max T+40 and metadata T+50)
@@ -357,7 +349,7 @@ def test_submissions_before_cursor_filtered_by_api(
 
     # Act: Load with cursor = T+30 (should get T+30, T+40, T+50)
     resource = kobo_submission_factory(
-        earliest_submission_date="2025-11-01T00:00:31.000Z"
+        submission_time_start="2025-11-01T00:00:31.000Z"
     )  # T+30
     run_pipeline_once(resource, table_name="kobo_submission")
 

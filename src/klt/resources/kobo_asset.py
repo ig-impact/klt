@@ -35,14 +35,29 @@ def make_resource_kobo_asset(
     return kobo_asset
 
 
-last_submission_time_hint = dlt.sources.incremental(
-    cursor_path="deployment__last_submission_time",
-    initial_value="2025-11-01T00:00:01.000Z",
-    on_cursor_value_missing="include",
-)
+def make_last_submission_time_hint(initial_value: str):
+    """
+    Create incremental hint for deployment__last_submission_time cursor.
 
-date_modified_hint = dlt.sources.incremental(
-    cursor_path="date_modified",
-    initial_value="2025-11-01T00:00:01.000Z",
-    on_cursor_value_missing="raise",
-)
+    Includes assets missing this field (allows None) since some assets may not have
+    deployment__last_submission_time immediately available.
+    """
+    return dlt.sources.incremental(
+        cursor_path="deployment__last_submission_time",
+        initial_value=initial_value,
+        on_cursor_value_missing="include",
+    )
+
+
+def make_date_modified_hint(initial_value: str):
+    """
+    Create incremental hint for date_modified cursor.
+
+    Raises error on missing cursor value since all assets must have date_modified.
+    Currently unused but available for future filtering needs.
+    """
+    return dlt.sources.incremental(
+        cursor_path="date_modified",
+        initial_value=initial_value,
+        on_cursor_value_missing="raise",
+    )

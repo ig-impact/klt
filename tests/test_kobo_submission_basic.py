@@ -156,7 +156,7 @@ def test_earliest_submission_date_parameter(
     run_pipeline_once,
     assert_table_count,
 ):
-    """Override earliest_submission_date to custom value, verify initial cursor starts from that date."""
+    """Override submission_time_start to custom value, verify initial cursor starts from that date."""
     # Arrange: Create asset
     asset = asset_builder(uid="asset-1")
     rest_client_stub.set_for_path("project-views", [asset])
@@ -176,8 +176,8 @@ def test_earliest_submission_date_parameter(
     ]
     rest_client_stub.set_for_path("assets/asset-1/data", submissions)
 
-    # Act: Use custom earliest_submission_date of 2026-03-01
-    resource = kobo_submission_factory(earliest_submission_date="2026-03-01T00:00:00Z")
+    # Act: Use custom submission_time_start of 2026-03-01
+    resource = kobo_submission_factory(submission_time_start="2026-03-01T00:00:00Z")
     run_pipeline_once(resource, table_name="submissions_custom_date")
 
     # Assert: Only 2 submissions should be loaded (>= 2026-03-01)

@@ -30,12 +30,12 @@ def test_cursor_below_initial_value_skipped(
     run_pipeline_once,
     query,
 ):
-    """Submission with _submission_time < earliest_submission_date, verify filtered out."""
+    """Submission with _submission_time < submission_time_start, verify filtered out."""
     # Arrange: Create asset
     asset = asset_builder(uid="asset-1")
     rest_client_stub.set_for_path("project-views", [asset])
 
-    # Arrange: Submission BEFORE earliest_submission_date (2025-01-01)
+    # Arrange: Submission BEFORE submission_time_start (2025-01-01)
     # base_time is 2025-11-01, so -timedelta(days=310) = ~2024-12-27
     old_submission = submission_builder(
         id=1, submission_time_offset=-timedelta(days=310)
@@ -43,7 +43,7 @@ def test_cursor_below_initial_value_skipped(
     rest_client_stub.set_for_path("assets/asset-1/data", [old_submission])
 
     # Act
-    resource = kobo_submission_factory(earliest_submission_date="2025-01-01T00:00:00Z")
+    resource = kobo_submission_factory(submission_time_start="2025-01-01T00:00:00Z")
     run_pipeline_once(resource, table_name="submissions_old")
 
     # Assert: Table not created (submission filtered by query)
@@ -61,12 +61,12 @@ def test_cursor_equality_is_loaded(
     run_pipeline_once,
     assert_table_count,
 ):
-    """Submission with _submission_time == earliest_submission_date, verify loaded (using $gte)."""
+    """Submission with _submission_time == submission_time_start, verify loaded (using $gte)."""
     # Arrange: Create asset
     asset = asset_builder(uid="asset-1")
     rest_client_stub.set_for_path("project-views", [asset])
 
-    # Arrange: Submission exactly at earliest_submission_date
+    # Arrange: Submission exactly at submission_time_start
     # We need to create a submission with _submission_time = "2025-01-01T00:00:00Z"
     exact_submission = {
         "_id": 1,
@@ -78,7 +78,7 @@ def test_cursor_equality_is_loaded(
     rest_client_stub.set_for_path("assets/asset-1/data", [exact_submission])
 
     # Act
-    resource = kobo_submission_factory(earliest_submission_date="2025-01-01T00:00:00Z")
+    resource = kobo_submission_factory(submission_time_start="2025-01-01T00:00:00Z")
     run_pipeline_once(resource, table_name="submissions_exact")
 
     # Assert: Submission loaded (>= behavior)

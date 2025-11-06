@@ -1,13 +1,10 @@
 from __future__ import annotations
 
 
+import dlt
 import pytest
 
-from klt.resources.kobo_asset import (
-    date_modified_hint,
-    last_submission_time_hint,
-    make_resource_kobo_asset,
-)
+from klt.resources.kobo_asset import make_resource_kobo_asset
 
 
 class RESTClientStub:
@@ -133,8 +130,24 @@ def kobo_asset_factory(rest_client_stub):
 
 @pytest.fixture(
     params=[
-        ("date_modified", date_modified_hint, "raise"),
-        ("deployment__last_submission_time", last_submission_time_hint, "include"),
+        (
+            "date_modified",
+            dlt.sources.incremental(
+                cursor_path="date_modified",
+                initial_value="2025-11-01T00:00:01.000Z",
+                on_cursor_value_missing="raise",
+            ),
+            "raise",
+        ),
+        (
+            "deployment__last_submission_time",
+            dlt.sources.incremental(
+                cursor_path="deployment__last_submission_time",
+                initial_value="2025-11-01T00:00:01.000Z",
+                on_cursor_value_missing="include",
+            ),
+            "include",
+        ),
     ],
     ids=["date_modified", "last_submission_time"],
 )
@@ -169,16 +182,42 @@ def parallelized(request):
 
 @pytest.fixture(
     params=[
-        (date_modified_hint, "date_modified", "raise", True),
-        (date_modified_hint, "date_modified", "raise", False),
         (
-            last_submission_time_hint,
+            dlt.sources.incremental(
+                cursor_path="date_modified",
+                initial_value="2025-11-01T00:00:01.000Z",
+                on_cursor_value_missing="raise",
+            ),
+            "date_modified",
+            "raise",
+            True,
+        ),
+        (
+            dlt.sources.incremental(
+                cursor_path="date_modified",
+                initial_value="2025-11-01T00:00:01.000Z",
+                on_cursor_value_missing="raise",
+            ),
+            "date_modified",
+            "raise",
+            False,
+        ),
+        (
+            dlt.sources.incremental(
+                cursor_path="deployment__last_submission_time",
+                initial_value="2025-11-01T00:00:01.000Z",
+                on_cursor_value_missing="include",
+            ),
             "deployment__last_submission_time",
             "include",
             True,
         ),
         (
-            last_submission_time_hint,
+            dlt.sources.incremental(
+                cursor_path="deployment__last_submission_time",
+                initial_value="2025-11-01T00:00:01.000Z",
+                on_cursor_value_missing="include",
+            ),
             "deployment__last_submission_time",
             "include",
             False,
@@ -230,16 +269,16 @@ def kobo_submission_factory(rest_client_stub, kobo_asset_factory):
         resource = kobo_submission_factory()
 
         # With custom asset
-        asset = kobo_asset_factory(hint=date_modified_hint)
+        asset = kobo_asset_factory(hint=some_hint)
         resource = kobo_submission_factory(asset=asset)
 
-        # With custom earliest_submission_date
+        # With custom submission_time_start
         resource = kobo_submission_factory(
-            earliest_submission_date="2025-02-01T00:00:00Z"
+            submission_time_start="2025-02-01T00:00:00Z"
         )
     """
 
-    def _build(asset=None, earliest_submission_date="2025-01-01T00:00:00Z"):
+    def _build(asset=None, submission_time_start="2025-01-01T00:00:00Z"):
         if asset is None:
             # Create a default asset resource with no incremental hint
             # This ensures we get all assets without filtering
@@ -250,7 +289,7 @@ def kobo_submission_factory(rest_client_stub, kobo_asset_factory):
         return make_resource_kobo_submission(
             kobo_client=rest_client_stub,
             kobo_asset=asset,
-            earliest_submission_date=earliest_submission_date,
+            submission_time_start=submission_time_start,
         )
 
     return _build

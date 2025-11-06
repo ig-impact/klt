@@ -1,8 +1,6 @@
-from klt.resources.kobo_asset import (
-    date_modified_hint,
-    last_submission_time_hint,
-    make_resource_kobo_asset,
-)
+import dlt
+
+from klt.resources.kobo_asset import make_resource_kobo_asset
 
 
 def test_date_modified_equality_is_loaded_greater_is_loaded(
@@ -12,6 +10,11 @@ def test_date_modified_equality_is_loaded_greater_is_loaded(
         rest_client_stub,
         kobo_project_view_uid="TEST",
         name="kobo_asset_dm_boundary",
+    )
+    date_modified_hint = dlt.sources.incremental(
+        cursor_path="date_modified",
+        initial_value="2025-11-01T00:00:01.000Z",
+        on_cursor_value_missing="raise",
     )
     resource = base.apply_hints(incremental=date_modified_hint)
 
@@ -56,6 +59,11 @@ def test_last_submission_time_equality_is_loaded_greater_is_loaded(
         kobo_project_view_uid="TEST",
         name="kobo_asset_lst_boundary",
     )
+    last_submission_time_hint = dlt.sources.incremental(
+        cursor_path="deployment__last_submission_time",
+        initial_value="2025-11-01T00:00:01.000Z",
+        on_cursor_value_missing="include",
+    )
     resource = base.apply_hints(incremental=last_submission_time_hint)
 
     table = "cursor_lst_boundary"
@@ -97,6 +105,11 @@ def test_date_modified_order_indifferent(run_twice, get_table_uids, rest_client_
         kobo_project_view_uid="TEST",
         name="kobo_asset_dm_boundary",
     )
+    date_modified_hint = dlt.sources.incremental(
+        cursor_path="date_modified",
+        initial_value="2025-11-01T00:00:01.000Z",
+        on_cursor_value_missing="raise",
+    )
     resource = base.apply_hints(incremental=date_modified_hint)
 
     table = "cursor_dm_boundary"
@@ -137,6 +150,11 @@ def test_no_duplicates(run_twice, get_table_uids, rest_client_stub):
         rest_client_stub,
         kobo_project_view_uid="TEST",
         name="kobo_asset_dm_boundary",
+    )
+    date_modified_hint = dlt.sources.incremental(
+        cursor_path="date_modified",
+        initial_value="2025-11-01T00:00:01.000Z",
+        on_cursor_value_missing="raise",
     )
     resource = base.apply_hints(incremental=date_modified_hint)
 

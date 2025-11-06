@@ -1,10 +1,7 @@
+import dlt
 import pytest
 
-from klt.resources.kobo_asset import (
-    date_modified_hint,
-    last_submission_time_hint,
-    make_resource_kobo_asset,
-)
+from klt.resources.kobo_asset import make_resource_kobo_asset
 
 
 def test_filters_submission_count(
@@ -56,6 +53,11 @@ def test_date_modified_missing_raises(run_pipeline_once, rest_client_stub):
     # Arrange: passes submission filter but lacks date_modified
     rest_client_stub.set([{"uid": "x", "deployment__submission_count": 1}])
     base = make_resource_kobo_asset(rest_client_stub, kobo_project_view_uid="TEST")
+    date_modified_hint = dlt.sources.incremental(
+        cursor_path="date_modified",
+        initial_value="2025-11-01T00:00:01.000Z",
+        on_cursor_value_missing="raise",
+    )
     resource = base.apply_hints(incremental=date_modified_hint)
 
     # Act / Assert: on_cursor_value_missing="raise" should bubble up
@@ -72,6 +74,11 @@ def test_last_submission_time_missing_is_included(
     rest_client_stub.set([{"uid": "y", "deployment__submission_count": 1}])
     base = make_resource_kobo_asset(
         rest_client_stub, kobo_project_view_uid="TEST", name="kobo_asset_for_data"
+    )
+    last_submission_time_hint = dlt.sources.incremental(
+        cursor_path="deployment__last_submission_time",
+        initial_value="2025-11-01T00:00:01.000Z",
+        on_cursor_value_missing="include",
     )
     resource = base.apply_hints(incremental=last_submission_time_hint)
 

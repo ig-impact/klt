@@ -1,9 +1,8 @@
 from datetime import timedelta
 
+import dlt
 import pytest
 from dlt.pipeline.exceptions import PipelineStepFailed
-
-from klt.resources.kobo_asset import date_modified_hint, last_submission_time_hint
 
 
 def test_empty_first_page(
@@ -179,6 +178,11 @@ def test_date_modified_missing_raises_with_valid_items(
         ]
     )
 
+    date_modified_hint = dlt.sources.incremental(
+        cursor_path="date_modified",
+        initial_value="2025-11-01T00:00:01.000Z",
+        on_cursor_value_missing="raise",
+    )
     resource = kobo_asset_factory(hint=date_modified_hint)
 
     # Act / Assert - should raise PipelineStepFailed wrapping IncrementalCursorPathMissing
@@ -199,6 +203,11 @@ def test_last_submission_time_missing_included_in_second_run(
 ):
     """Test that missing cursor values are included even in second run."""
     # Arrange
+    last_submission_time_hint = dlt.sources.incremental(
+        cursor_path="deployment__last_submission_time",
+        initial_value="2025-11-01T00:00:01.000Z",
+        on_cursor_value_missing="include",
+    )
     resource = kobo_asset_factory(
         hint=last_submission_time_hint, name="lst_missing_second"
     )

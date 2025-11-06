@@ -7,7 +7,7 @@ from dlt.sources.helpers.rest_client.client import RESTClient
 def make_resource_kobo_submission(
     kobo_client: RESTClient,
     kobo_asset,
-    earliest_submission_date: str = "2025-01-01T00:00:00Z",
+    submission_time_start: str = "2025-01-01T00:00:00Z",
 ):
     @dlt.resource(
         data_from=kobo_asset,
@@ -18,7 +18,7 @@ def make_resource_kobo_submission(
     def kobo_submission(
         asset,
         submission_time=dlt.sources.incremental(
-            cursor_path="_submission_time", initial_value=earliest_submission_date
+            cursor_path="_submission_time", initial_value=submission_time_start
         ),
     ):
         """
