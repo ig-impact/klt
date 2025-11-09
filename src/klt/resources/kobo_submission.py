@@ -9,7 +9,7 @@ def make_resource_kobo_submission(
     kobo_asset,
     submission_time_start: str = "2025-01-01T00:00:00Z",
 ):
-    @dlt.resource(
+    @dlt.transformer(
         data_from=kobo_asset,
         parallelized=True,
         name="kobo_submission",
