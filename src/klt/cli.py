@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import typer
 
 from klt.kobotoolbox_pipeline import load_kobo
@@ -7,26 +9,26 @@ app = typer.Typer()
 
 @app.command()
 def run(
-    submission_time_start: str = typer.Option(
-        "2025-01-01T00:00:00Z",
+    submission_time_start: datetime = typer.Option(
+        datetime(year=2000, month=1, day=1),
         "--submission-time-start",
         help="Initial date for incremental loading of submission data. "
-        "Only submissions with _submission_time >= this value will be fetched on first run. "
-        "Must be in ISO 8601 format (e.g., 2025-01-01T00:00:00Z).",
+        "Only submissions with _submission_time >= this value will be fetched on first run. ",
+        rich_help_panel="Incremental Loading",
     ),
-    asset_last_submission_start: str = typer.Option(
-        "2025-11-01T00:00:01.000Z",
+    asset_last_submission_start: datetime = typer.Option(
+        datetime(year=2000, month=1, day=1),
         "--asset-last-submission-start",
         help="Initial date for filtering assets by deployment__last_submission_time. "
-        "Only assets with a last submission >= this value will be processed on first run. "
-        "Must be in ISO 8601 format (e.g., 2025-11-01T00:00:01.000Z).",
+        "Only assets with a last submission >= this value will be processed on first run. ",
+        rich_help_panel="Incremental Loading",
     ),
-    asset_modified_start: str = typer.Option(
-        "2025-11-01T00:00:01.000Z",
+    asset_modified_start: datetime = typer.Option(
+        datetime(year=2000, month=1, day=1),
         "--asset-modified-start",
         help="Initial date for filtering assets by date_modified field. "
-        "Only assets modified >= this value will be processed on first run. "
-        "Must be in ISO 8601 format (e.g., 2025-11-01T00:00:01.000Z).",
+        "Only assets modified >= this value will be processed on first run. ",
+        rich_help_panel="Incremental Loading",
     ),
 ):
     """

@@ -1,16 +1,23 @@
 [runtime]
-log_level="DEBUG"  # the system log level of dlt
+log_level="DEBUG"
 dlthub_telemetry = false
 http_show_error_body = true
 http_max_error_body_length = 8192  # Maximum characters (default: 8192)
 
+request_max_attempts = 10  # Stop after 10 retry attempts instead of 5
+request_backoff_factor = 1.5  # Multiplier applied to the exponential delays. Default is 1
+request_timeout = 120  # Timeout in seconds
+request_max_retry_delay = 30  # Cap exponential delay to 30 seconds
 
 [extract]
 workers=20
 
 [normalize]
-workers=8
+workers=6
 
 [load]
-workers=50
+workers=20
 truncate_staging_dataset=true
+
+[data_writer]
+file_max_items=5000
