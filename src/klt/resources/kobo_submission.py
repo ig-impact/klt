@@ -1,7 +1,7 @@
-import json
 from datetime import datetime
 
 import dlt
+import orjson
 from dlt.sources.helpers.rest_client.client import RESTClient
 
 from klt.utils import make_kobo_pipeline_hooks, parse_timestamps
@@ -40,19 +40,22 @@ def make_resource_kobo_submission(
 
 
 def transform_submission_data(data: dict):
-    excluded = ["_geolocation", "_downloads", "_validation_status"]
-    fields = [key for key in data if str(key).startswith("_") and key not in excluded]
-    questions = [key for key in data if key not in fields and key not in excluded]
+    excluded = frozenset(["_geolocation", "_downloads", "_validation_status"])
+
+    val = {}
     eav = []
-    for question in questions:
-        if isinstance(data[question], list):
-            data[question] = json.dumps(data[question])
-        eav.append(
-            {
-                "question": question,
-                "response": data[question],
-            }
-        )
-    val = {key: data[key] for key in fields}
+
+    for key, value in data.items():
+        if key in excluded:
+            continue
+
+        # Keep metadata fields in the main table
+        if key.startswith("_"):
+            val[key] = value
+        else:
+            # Question field - convert lists to JSON
+            response = orjson.dumps(value) if isinstance(value, list) else value
+            eav.append({"question": key, "response": response})
+
     val["responses"] = eav
     return val
