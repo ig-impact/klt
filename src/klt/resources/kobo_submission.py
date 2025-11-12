@@ -2,7 +2,6 @@ import json
 from datetime import datetime
 
 import dlt
-import pendulum
 from dlt.sources.helpers.rest_client.client import RESTClient
 
 from klt.utils import make_kobo_pipeline_hooks, parse_timestamps
@@ -44,7 +43,6 @@ def transform_submission_data(data: dict):
     excluded = ["_geolocation", "_downloads", "_validation_status"]
     fields = [key for key in data if str(key).startswith("_") and key not in excluded]
     questions = [key for key in data if key not in fields and key not in excluded]
-    data["_submission_time"] = pendulum.parse(data["_submission_time"])
     eav = []
     for question in questions:
         if isinstance(data[question], list):
