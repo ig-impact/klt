@@ -1,47 +1,41 @@
 import json
+from datetime import datetime
 
 import dlt
+import pendulum
 from dlt.sources.helpers.rest_client.client import RESTClient
+
+from klt.utils import make_kobo_pipeline_hooks, parse_timestamps
+
+submission_hooks = make_kobo_pipeline_hooks(
+    ignored_http_status_codes=[404, 502], enable_http_logging=True
+)
 
 
 def make_resource_kobo_submission(
-    kobo_client: RESTClient,
-    kobo_asset,
-    submission_time_start: str = "2025-01-01T00:00:00Z",
+    kobo_client: RESTClient, kobo_asset, submission_time_start: datetime
 ):
     @dlt.transformer(
         data_from=kobo_asset,
-        parallelized=True,
+        parallelized=False,
         name="kobo_submission",
         primary_key=["_id", "_uuid"],
     )
     def kobo_submission(
         asset,
-        submission_time=dlt.sources.incremental(
-            cursor_path="_submission_time", initial_value=submission_time_start
-        ),
     ):
-        """
-        Fetch submissions for an asset using incremental loading.
-
-        Uses a global cursor based on the maximum _submission_time from all previously
-        loaded submissions across all assets. Each incremental run queries the API for
-        submissions with _submission_time >= cursor_value.
-
-        The cursor advances to the maximum _submission_time from actual loaded data,
-        not from asset metadata fields like deployment__last_submission_time.
-        """
         asset_uid = asset["uid"]
 
         path = f"/api/v2/assets/{asset_uid}/data/"
         params = {
-            "query": json.dumps(
-                {"_submission_time": {"$gte": submission_time.start_value}}
-            ),
             "format": "json",
         }
-        yield kobo_client.paginate(path=path, params=params, data_selector="results")
+        for page in kobo_client.paginate(
+            path=path, params=params, data_selector="results", hooks=submission_hooks
+        ):
+            yield from page
 
+    kobo_submission.add_map(parse_timestamps)
     kobo_submission.add_map(transform_submission_data)
     return kobo_submission
 
@@ -50,6 +44,7 @@ def transform_submission_data(data: dict):
     excluded = ["_geolocation", "_downloads", "_validation_status"]
     fields = [key for key in data if str(key).startswith("_") and key not in excluded]
     questions = [key for key in data if key not in fields and key not in excluded]
+    data["_submission_time"] = pendulum.parse(data["_submission_time"])
     eav = []
     for question in questions:
         if isinstance(data[question], list):

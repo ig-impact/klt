@@ -1,7 +1,13 @@
+from datetime import datetime
+
 import dlt
 from dlt.sources.helpers.rest_client.client import RESTClient
 
-from ..logging import http_log
+from klt.utils import make_kobo_pipeline_hooks, parse_timestamps
+
+asset_hooks = make_kobo_pipeline_hooks(
+    ignored_http_status_codes=[404, 502], enable_http_logging=True
+)
 
 
 def make_resource_kobo_asset(
@@ -27,15 +33,16 @@ def make_resource_kobo_asset(
             params=params,
             data_selector="results",
             allow_redirects=False,
-            hooks={"response": [http_log]},
+            hooks=asset_hooks,
         ):
             yield from page
 
+    kobo_asset.add_map(parse_timestamps)
     kobo_asset.add_filter(lambda ka: (ka.get("deployment__submission_count") or 0) > 0)
     return kobo_asset
 
 
-def make_last_submission_time_hint(initial_value: str):
+def make_last_submission_time_hint(initial_value: datetime):
     """
     Create incremental hint for deployment__last_submission_time cursor.
 
@@ -49,7 +56,7 @@ def make_last_submission_time_hint(initial_value: str):
     )
 
 
-def make_date_modified_hint(initial_value: str):
+def make_date_modified_hint(initial_value: datetime):
     """
     Create incremental hint for date_modified cursor.
 

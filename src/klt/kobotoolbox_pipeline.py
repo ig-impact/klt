@@ -1,5 +1,8 @@
+from datetime import datetime
+
 import dlt
 from dlt.sources.helpers.rest_client.client import RESTClient
+from requests_cache import CachedSession
 
 from klt.resources import (
     make_last_submission_time_hint,
@@ -11,14 +14,17 @@ from klt.rest_client import make_rest_client
 
 @dlt.source
 def kobo_source(
+    submission_time_start: datetime,
+    asset_last_submission_start: datetime,
+    asset_modified_start: datetime,
     kobo_token: str = dlt.secrets.value,
     kobo_server: str = dlt.secrets.value,
     kobo_project_view: str = dlt.secrets.value,
-    submission_time_start: str = "2025-01-01T00:00:00Z",
-    asset_last_submission_start: str = "2025-11-01T00:00:01.000Z",
-    asset_modified_start: str = "2025-11-01T00:00:01.000Z",
 ):
-    kobo_client: RESTClient = make_rest_client(kobo_token, kobo_server)
+    cached_session = CachedSession(expire_after=60 * 60 * 24)
+    kobo_client: RESTClient = make_rest_client(
+        kobo_token, kobo_server, session=cached_session
+    )
 
     # Create incremental hint for asset last submission time
     last_submission_time_hint = make_last_submission_time_hint(
@@ -37,15 +43,14 @@ def kobo_source(
 
 
 def load_kobo(
-    submission_time_start: str = "2025-01-01T00:00:00Z",
-    asset_last_submission_start: str = "2025-11-01T00:00:01.000Z",
-    asset_modified_start: str = "2025-11-01T00:00:01.000Z",
+    submission_time_start: datetime,
+    asset_last_submission_start: datetime,
+    asset_modified_start: datetime,
 ):
     pipeline = dlt.pipeline(
         pipeline_name="klt",
         destination="duckdb",
         dataset_name="klt_dataset",
-        pipelines_dir="./dlt_pipelines",
         progress="log",
     )
     pipeline.run(
@@ -56,3 +61,5 @@ def load_kobo(
         ),
         write_disposition="merge",
     )
+    last_trace = pipeline.last_trace
+    pipeline.run([last_trace], table_name="trace")
