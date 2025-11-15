@@ -26,20 +26,33 @@ def kobo_source(
         kobo_token, kobo_server, session=cached_session
     )
 
-    # Create incremental hint for asset last submission time
     last_submission_time_hint = make_last_submission_time_hint(
         asset_last_submission_start
     )
 
     kobo_asset = make_resource_kobo_asset(
-        kobo_client, kobo_project_view_uid=kobo_project_view
+        kobo_client, kobo_project_view_uid=kobo_project_view, selected=False
+    ).apply_hints(incremental=last_submission_time_hint)
+
+    kobo_asset_content = make_resource_kobo_asset(
+        kobo_client,
+        kobo_project_view_uid=kobo_project_view,
+        resource_name="kobo_asset_content",
     ).apply_hints(incremental=last_submission_time_hint)
 
     kobo_submission = make_resource_kobo_submission(
         kobo_client, kobo_asset, submission_time_start=submission_time_start
     )
 
-    return [kobo_asset, kobo_submission]
+    return [kobo_asset, kobo_asset_content, kobo_submission]
+
+
+pipeline: dlt.Pipeline = dlt.pipeline(
+    pipeline_name="klt",
+    destination="duckdb",
+    dataset_name="klt_dataset",
+    progress="log",
+)
 
 
 def load_kobo(
@@ -47,12 +60,6 @@ def load_kobo(
     asset_last_submission_start: datetime,
     asset_modified_start: datetime,
 ):
-    pipeline = dlt.pipeline(
-        pipeline_name="klt",
-        destination="duckdb",
-        dataset_name="klt_dataset",
-        progress="log",
-    )
     pipeline.run(
         kobo_source(
             submission_time_start=submission_time_start,

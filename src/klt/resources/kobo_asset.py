@@ -1,6 +1,13 @@
+"""KoboToolbox asset resource and incremental hints.
+
+This module provides DLT resources for fetching KoboToolbox assets (forms)
+from a project view, with optional incremental loading support.
+"""
+
 from datetime import datetime
 
 import dlt
+from dlt.sources import DltResource
 from dlt.sources.helpers.rest_client.client import RESTClient
 
 from klt.utils import make_kobo_pipeline_hooks, parse_timestamps
@@ -13,14 +20,52 @@ asset_hooks = make_kobo_pipeline_hooks(
 def make_resource_kobo_asset(
     kobo_client: RESTClient,
     kobo_project_view_uid: str,
-    name: str = "kobo_asset",
+    resource_name: str = "kobo_asset",
     page_size: int = 5000,
     parallelized: bool = True,
-):
+    selected: bool = True,
+) -> DltResource:
+    """Create a DLT resource for fetching KoboToolbox assets from a project view.
+
+    Fetches all assets (forms) associated with a KoboToolbox project view,
+    automatically parsing timestamps and filtering to include only assets
+    with at least one submission.
+
+    Parameters
+    ----------
+    kobo_client : RESTClient
+        Authenticated REST client for KoboToolbox API requests.
+    kobo_project_view_uid : str
+        Unique identifier of the KoboToolbox project view.
+    resource_name : str, default="kobo_asset"
+        Name of the DLT resource in the pipeline.
+    page_size : int, default=5000
+        Number of assets to fetch per API request page.
+    parallelized : bool, default=True
+        Whether to enable parallel processing of this resource.
+    selected : bool, default=True
+        Whether this resource is selected for loading by default.
+
+    Returns
+    -------
+    DltResource
+        Configured DLT resource with timestamp parsing and submission
+        count filtering applied. Primary key is set to "uid".
+
+    Notes
+    -----
+    The resource automatically:
+    - Parses ISO timestamp fields to datetime objects
+    - Filters out assets with zero submissions
+    - Handles 404 and 502 HTTP errors gracefully via hooks
+    - Prevents HTTP redirects during pagination
+    """
+
     @dlt.resource(
-        name=name,
+        name=resource_name,
         primary_key=["uid"],
         parallelized=parallelized,
+        selected=selected,
     )
     def kobo_asset():
         path = f"/api/v2/project-views/{kobo_project_view_uid}/assets/"
@@ -43,11 +88,29 @@ def make_resource_kobo_asset(
 
 
 def make_last_submission_time_hint(initial_value: datetime):
-    """
-    Create incremental hint for deployment__last_submission_time cursor.
+    """Create incremental hint for deployment__last_submission_time cursor.
 
-    Includes assets missing this field (allows None) since some assets may not have
-    deployment__last_submission_time immediately available.
+    Enables incremental loading based on the last submission timestamp,
+    including assets where this field may be missing or None.
+
+    Parameters
+    ----------
+    initial_value : datetime
+        Starting cursor value for the first incremental load. Assets with
+        deployment__last_submission_time >= this value will be included.
+
+    Returns
+    -------
+    dlt.sources.incremental
+        Incremental hint configured with cursor_path set to
+        "deployment__last_submission_time" and on_cursor_value_missing
+        set to "include".
+
+    Notes
+    -----
+    Uses on_cursor_value_missing="include" because some assets may not
+    have deployment__last_submission_time immediately available after
+    creation or if they haven't received submissions yet.
     """
     return dlt.sources.incremental(
         cursor_path="deployment__last_submission_time",
@@ -57,11 +120,29 @@ def make_last_submission_time_hint(initial_value: datetime):
 
 
 def make_date_modified_hint(initial_value: datetime):
-    """
-    Create incremental hint for date_modified cursor.
+    """Create incremental hint for date_modified cursor.
 
-    Raises error on missing cursor value since all assets must have date_modified.
-    Currently unused but available for future filtering needs.
+    Enables incremental loading based on asset modification timestamp,
+    raising an error if the cursor field is missing.
+
+    Parameters
+    ----------
+    initial_value : datetime
+        Starting cursor value for the first incremental load. Assets with
+        date_modified >= this value will be included.
+
+    Returns
+    -------
+    dlt.sources.incremental
+        Incremental hint configured with cursor_path set to "date_modified"
+        and on_cursor_value_missing set to "raise".
+
+    Notes
+    -----
+    Uses on_cursor_value_missing="raise" because all KoboToolbox assets
+    are required to have a date_modified field. This function is currently
+    unused but available for future incremental loading scenarios that need
+    to track asset modifications rather than submission activity.
     """
     return dlt.sources.incremental(
         cursor_path="date_modified",
